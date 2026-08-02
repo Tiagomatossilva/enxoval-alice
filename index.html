@@ -285,13 +285,17 @@
     border: 1.5px solid var(--linha); background: var(--cartao); color: var(--suave); white-space: nowrap;
   }
   .vfiltro.ativa { border-color: var(--amora); background: var(--veu); color: var(--amora-forte); }
-  .vgrade { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 12px 10px; }
+  .vgrade { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 16px 12px; }
   .vcard { text-align: left; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .vcard .vfoto {
-    aspect-ratio: 1; border-radius: 14px; background: #FFFFFF; border: 1px solid var(--linha);
-    display: grid; place-items: center; overflow: hidden; padding: 8px;
+    aspect-ratio: 1; border-radius: 16px; background: #FFFFFF; border: 1px solid var(--linha);
+    display: grid; place-items: center; overflow: hidden; padding: 10px;
+    box-shadow: 0 2px 8px rgba(69, 54, 49, .06);
   }
-  .vcard .vfoto img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .vcard .vfoto img {
+    max-width: 100%; max-height: 100%; object-fit: contain;
+    filter: drop-shadow(0 8px 12px rgba(69, 54, 49, .14));
+  }
   .vcard .vmarca { font-size: 13px; font-weight: 700; line-height: 1.2; }
   .vcard .vnome { font-size: 11.5px; color: var(--suave); line-height: 1.3; }
   .vcard .vvalor { font-size: 11.5px; color: var(--amora-forte); font-weight: 650; }
@@ -390,7 +394,7 @@
       <button class="botao-pdf" id="botaoPdf">🖨️&ensp;Gerar PDF da lista</button>
       <button class="botao-pdf botao-config" data-abre-ajustes>⚙️&ensp;Moeda e leitura por IA</button>
     </div>
-    <p class="nota-rodape">As quantidades são sugestões baseadas em listas de enxoval brasileiras —<br>toque em uma fase para ajustar como quiser. 🎀</p>
+    <p class="nota-rodape">As quantidades são sugestões baseadas em listas de enxoval brasileiras —<br>toque em uma fase para ajustar como quiser. 🎀<br><span id="versaoHome" style="opacity:.75"></span></p>
   </section>
 
   <!-- ============ COLEÇÃO ============ -->
@@ -444,6 +448,12 @@
       <div class="campo"><label for="cPeso">Peso estimado (kg)</label><input id="cPeso" type="text" inputmode="decimal" placeholder="3,2"></div>
     </div>
     <p class="sem-fotos">Com a data, eu mostro em que meses e estação ela usará cada tamanho; com o peso, quanto tempo o RN deve durar. Dá para ajustar quando quiser — inclusive depois que ela nascer.</p>
+    <div class="grupo-titulo">Recorte automático das fotos</div>
+    <div class="chips">
+      <button class="chip" data-recorte="on">✂️ Ligado</button>
+      <button class="chip" data-recorte="off">Desligado</button>
+    </div>
+    <p class="sem-fotos">Ao fotografar a peça, o app recorta o fundo sozinho e monta a vitrine em fundo branco. Tudo acontece no próprio celular — a foto não sai do aparelho. Se o recorte estiver lento, desligue aqui.</p>
     <div class="grupo-titulo">Estações do ano</div>
     <div class="chips">
       <button class="chip" data-lugar="BR">🇧🇷 Brasil</button>
@@ -694,7 +704,7 @@ function valorCol(col) {
 }
 /* ============ CONFIGURAÇÃO (moeda + chave da IA) ============ */
 const CFG_CHAVE = 'enxoval-alice-cfg';
-const VERSAO = 7;
+const VERSAO = 8;
 let CONFIG = { moeda: 'USD', chave: '', lugar: 'BR' };
 try { CONFIG = Object.assign(CONFIG, JSON.parse(localStorage.getItem(CFG_CHAVE) || '{}')); } catch (e) {}
 function salvarCfg() { try { localStorage.setItem(CFG_CHAVE, JSON.stringify(CONFIG)); } catch (e) {} }
@@ -806,6 +816,40 @@ async function comprimirFoto(arquivo) {
   const blob = await new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error('sem blob')), 'image/jpeg', .72));
   return { blob, aval };
 }
+/* ---- recorte automático de fundo (roda no aparelho, nada sai do celular) ---- */
+let _recorteModulo = null;
+let _recortePronto = false;
+function carregarRecorte() {
+  if (!_recorteModulo) _recorteModulo = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
+  return _recorteModulo;
+}
+async function recortarFundo(blob) {
+  const mod = await carregarRecorte();
+  const fn = mod.removeBackground || (mod.default && mod.default.removeBackground) || mod.default;
+  const resultado = await fn(blob, { model: 'isnet_quint8', output: { format: 'image/png' } });
+  _recortePronto = true;
+  return resultado;
+}
+function comTempoLimite(promessa, ms) {
+  return new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error('demorou demais')), ms);
+    promessa.then(v => { clearTimeout(t); res(v); }, e => { clearTimeout(t); rej(e); });
+  });
+}
+async function prepararFoto(arquivo, ehPeca) {
+  if (!ehPeca || CONFIG.recorte === false) return { blob: arquivo, recortado: false };
+  try {
+    toast(_recortePronto
+      ? '✂️ Recortando o fundo…'
+      : '✨ Preparando a tesourinha mágica — a primeira vez pode levar um minutinho…');
+    const rec = await comTempoLimite(recortarFundo(arquivo), 120000);
+    return { blob: rec, recortado: true };
+  } catch (e) {
+    toast('O recorte não deu certo desta vez — mantive a foto original. 🤍');
+    return { blob: arquivo, recortado: false };
+  }
+}
+
 function avisoQualidade(aval) {
   if (!aval) return false;
   if (aval.escura) { toast('💡 Ficou meio escura — luz de janela deixa bem melhor. Toque no quadrinho para refazer, se quiser.'); return true; }
@@ -1077,8 +1121,11 @@ function renderVitrine() {
     if (vitrineFiltro === 'ess') return col.tipo === 'ess';
     return col.id === vitrineFiltro;
   });
+  const investidoVit = somaValores(fotos);
   document.getElementById('vitrineConta').textContent =
-    fotos.length ? (fotos.length === 1 ? '1 pecinha fotografada' : fotos.length + ' pecinhas fotografadas') : '';
+    fotos.length
+      ? (fotos.length === 1 ? '1 pecinha' : fotos.length + ' pecinhas') + (investidoVit > 0 ? ' · ' + dinheiro(investidoVit) : '')
+      : '';
   document.getElementById('vitrineGrade').innerHTML = fotos.length
     ? `<div class="vgrade">` + fotos.map(f => {
         const { col, item } = infoDe(f.itemKey);
@@ -1159,6 +1206,13 @@ document.addEventListener('click', (ev) => {
     if (colAberta) renderCol(colAberta, false);
     return;
   }
+  const chipRecorte = alvo.closest('[data-recorte]');
+  if (chipRecorte) {
+    CONFIG.recorte = chipRecorte.dataset.recorte === 'on';
+    salvarCfg();
+    atualizarChips();
+    return;
+  }
   const chipLugar = alvo.closest('[data-lugar]');
   if (chipLugar) {
     CONFIG.lugar = chipLugar.dataset.lugar;
@@ -1234,14 +1288,16 @@ document.getElementById('inputFoto').addEventListener('change', async (ev) => {
     const f = FOTOS.find(x => String(x.id) === String(id));
     if (!f) return;
     try {
-      const r = await comprimirFoto(arquivo);
+      const prep = await prepararFoto(arquivo, true);
+      const r = await comprimirFoto(prep.blob);
       f.blob = r.blob;
       if (_urls.has(f.id)) { try { URL.revokeObjectURL(_urls.get(f.id)); } catch (e) {} _urls.delete(f.id); }
       await atualizarFotoDB(f);
       verFoto(f.id);
       if (document.getElementById('telaVitrine').classList.contains('ativa')) renderVitrine();
       if (itemAberto) renderSheet();
-      if (!avisoQualidade(r.aval)) toast('📷 Foto refeita!');
+      if (prep.recortado) toast('✂️ Foto refeita e recortada!');
+      else if (!avisoQualidade(r.aval)) toast('📷 Foto refeita!');
     } catch (e) { toast('Não consegui ler essa imagem — tente outra.'); }
     return;
   }
@@ -1249,10 +1305,12 @@ document.getElementById('inputFoto').addEventListener('change', async (ev) => {
   if (!itemAberto || !fotoPendente) return;
   guardarCampos();
   try {
-    const r = await comprimirFoto(arquivo);
+    const prep = await prepararFoto(arquivo, alvoFoto !== 'etq');
+    const r = await comprimirFoto(prep.blob);
     fotoPendente[alvoFoto === 'etq' ? 'etq' : 'peca'] = r.blob;
     renderSheet();
-    avisoQualidade(r.aval);
+    if (prep.recortado) toast('✂️ Prontinho — peça recortada para a vitrine!');
+    else avisoQualidade(r.aval);
   } catch (e) {
     toast('Não consegui ler essa imagem — tente outra.');
   }
@@ -1297,6 +1355,8 @@ function atualizarChips() {
   for (const b of cm) b.classList.toggle('ativa', b.dataset.moeda === CONFIG.moeda);
   const cl = document.querySelectorAll ? document.querySelectorAll('[data-lugar]') : [];
   for (const b of cl) b.classList.toggle('ativa', b.dataset.lugar === (CONFIG.lugar || 'BR'));
+  const cr = document.querySelectorAll ? document.querySelectorAll('[data-recorte]') : [];
+  for (const b of cr) b.classList.toggle('ativa', (CONFIG.recorte !== false) === (b.dataset.recorte === 'on'));
 }
 
 /* ============ LEITURA DE ETIQUETA COM IA ============ */
@@ -1484,6 +1544,7 @@ document.getElementById('botaoPdf').addEventListener('click', () => {
 
 /* ============ INÍCIO ============ */
 document.getElementById('versaoApp').textContent = 'Enxoval da Alice · versão ' + VERSAO;
+document.getElementById('versaoHome').textContent = 'v' + VERSAO;
 renderHome();
 iniciarDB().then(() => {
   renderHome();
