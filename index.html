@@ -267,6 +267,25 @@
   .fslot.tem { border-style: solid; border-color: var(--amora); }
   .fslot .ico { font-size: 24px; }
 
+  /* ============ VITRINE (guarda-roupa) ============ */
+  .vfiltros { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 12px; -webkit-overflow-scrolling: touch; }
+  .vfiltro {
+    flex-shrink: 0; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 650;
+    border: 1.5px solid var(--linha); background: var(--cartao); color: var(--suave); white-space: nowrap;
+  }
+  .vfiltro.ativa { border-color: var(--amora); background: var(--veu); color: var(--amora-forte); }
+  .vgrade { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 12px 10px; }
+  .vcard { text-align: left; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .vcard .vfoto {
+    aspect-ratio: 1; border-radius: 14px; background: #FFFFFF; border: 1px solid var(--linha);
+    display: grid; place-items: center; overflow: hidden; padding: 8px;
+  }
+  .vcard .vfoto img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .vcard .vmarca { font-size: 13px; font-weight: 700; line-height: 1.2; }
+  .vcard .vnome { font-size: 11.5px; color: var(--suave); line-height: 1.3; }
+  .vcard .vvalor { font-size: 11.5px; color: var(--amora-forte); font-weight: 650; }
+  .vvazio { text-align: center; color: var(--suave); font-size: 13.5px; line-height: 1.6; padding: 30px 16px; }
+
   /* ajustes (moeda + IA) */
   .botao-config { background: var(--cartao); color: var(--tinta); border: 1px solid var(--linha); }
   .chips { display: flex; gap: 8px; margin-top: 10px; }
@@ -356,6 +375,7 @@
     <div class="grade-ess" id="gradeEss"></div>
 
     <div class="acoes">
+      <button class="botao-pdf botao-config" data-abre-vitrine>👗&ensp;Vitrine das pecinhas</button>
       <button class="botao-pdf" id="botaoPdf">🖨️&ensp;Gerar PDF da lista</button>
       <button class="botao-pdf botao-config" data-abre-ajustes>⚙️&ensp;Moeda e leitura por IA</button>
     </div>
@@ -376,6 +396,19 @@
       <div class="texto" id="colTexto"></div>
     </div>
     <div id="colConteudo"></div>
+  </section>
+
+  <!-- ============ VITRINE ============ -->
+  <section id="telaVitrine" class="tela">
+    <div class="col-topo">
+      <button class="voltar" data-vitrine-voltar aria-label="Voltar">←</button>
+      <div class="col-titulo">
+        <h2 class="display">Vitrine</h2>
+        <div class="idade" id="vitrineConta"></div>
+      </div>
+    </div>
+    <div class="vfiltros" id="vitrineFiltros"></div>
+    <div id="vitrineGrade"></div>
   </section>
 </div>
 
@@ -581,6 +614,21 @@ function removerFoto(id) {
   });
 }
 const fotosDe = (itemKey) => FOTOS.filter(f => f.itemKey === itemKey);
+function infoDe(itemKey) {
+  const partes = String(itemKey).split('.');
+  const col = COLECOES.find(c => c.id === partes[0]);
+  const item = col && col.itens.find(i => i.id === partes[1]);
+  return { col, item };
+}
+function atualizarFotoDB(reg) {
+  return new Promise((resolve) => {
+    if (!db || String(reg.id).startsWith('mem-')) return resolve();
+    try {
+      const rq = db.transaction('fotos', 'readwrite').objectStore('fotos').put(reg);
+      rq.onsuccess = () => resolve(); rq.onerror = () => resolve();
+    } catch (e) { resolve(); }
+  });
+}
 const somaValores = (fotos) => fotos.reduce((s, f) => s + (Number(f.valor) || 0), 0);
 function valorCol(col) {
   let v = 0;
@@ -657,6 +705,34 @@ function parseValor(txt) {
   return isNaN(n) ? null : n;
 }
 
+function avaliarCanvas(cv) {
+  try {
+    const s = 128;
+    const c2 = document.createElement('canvas');
+    c2.width = s; c2.height = s;
+    const cx = c2.getContext('2d');
+    cx.drawImage(cv, 0, 0, s, s);
+    const d = cx.getImageData(0, 0, s, s).data;
+    const g = new Array(s * s);
+    let soma = 0;
+    for (let i = 0; i < s * s; i++) {
+      const l = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+      g[i] = l; soma += l;
+    }
+    const media = soma / (s * s);
+    let varLap = 0, n = 0;
+    for (let y = 1; y < s - 1; y++) {
+      for (let x = 1; x < s - 1; x++) {
+        const i = y * s + x;
+        const lap = 4 * g[i] - g[i - 1] - g[i + 1] - g[i - s] - g[i + s];
+        varLap += lap * lap; n++;
+      }
+    }
+    varLap /= n;
+    return { escura: media < 55, borrada: varLap < 12 };
+  } catch (e) { return {}; }
+}
+
 async function comprimirFoto(arquivo) {
   const bmp = await createImageBitmap(arquivo);
   const MAX = 1000;
@@ -664,8 +740,19 @@ async function comprimirFoto(arquivo) {
   const cv = document.createElement('canvas');
   cv.width = Math.max(1, Math.round(bmp.width * esc));
   cv.height = Math.max(1, Math.round(bmp.height * esc));
-  cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
-  return await new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error('sem blob')), 'image/jpeg', .72));
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#FFFFFF'; /* fundo branco: recortes do iPhone ganham visual de catálogo */
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(bmp, 0, 0, cv.width, cv.height);
+  const aval = avaliarCanvas(cv);
+  const blob = await new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error('sem blob')), 'image/jpeg', .72));
+  return { blob, aval };
+}
+function avisoQualidade(aval) {
+  if (!aval) return false;
+  if (aval.escura) { toast('💡 Ficou meio escura — luz de janela deixa bem melhor. Toque no quadrinho para refazer, se quiser.'); return true; }
+  if (aval.borrada) { toast('📷 Acho que tremeu um pouquinho — toque no quadrinho para refazer, se quiser.'); return true; }
+  return false;
 }
 
 /* ============ ANEL SVG ============ */
@@ -788,6 +875,7 @@ function renderCol(id, anim) {
 let itemAberto = null;      // { colId, itemId }
 let fotoPendente = null;    // { peca: Blob|null, etq: Blob|null, campos: {} } quando o formulário está aberto
 let alvoFoto = 'peca';      // qual slot recebe a próxima foto
+let trocaFotoId = null;     // foto existente sendo refeita
 const _urlTmp = new WeakMap();
 function urlTmp(blob) {
   if (!_urlTmp.has(blob)) { try { _urlTmp.set(blob, URL.createObjectURL(blob)); } catch (e) { return ''; } }
@@ -867,18 +955,20 @@ function renderSheet() {
           ${(f.valor || f.marca) ? `<span class="fvalor">${[f.marca, f.valor ? dinheiro(Number(f.valor)) : null].filter(Boolean).join(' · ')}</span>` : ''}
         </button>`).join('')}
       </div>`;
-    if (!fotos.length) html += `<p class="sem-fotos">Tire uma foto de cada pecinha comprada — com valor e marca, o enxoval fica organizado e vira uma recordação. As fotos ficam guardadas só neste aparelho. 🤍</p>`;
+    if (!fotos.length) html += `<p class="sem-fotos">Tire uma foto de cada pecinha comprada — com valor e marca, o enxoval fica organizado e vira uma recordação. As fotos ficam guardadas só neste aparelho. 🤍<br><br>📷 <strong>Dica:</strong> luz de janela (sem flash), fundo liso e claro, peça esticada vista de cima. Para o visual de catálogo, use o recorte do iPhone: segure o dedo na roupinha em uma foto e salve o recorte.</p>`;
   }
   document.getElementById('sheet').innerHTML = html;
 }
 function verFoto(id) {
   const f = FOTOS.find(x => String(x.id) === String(id));
   if (!f) return;
+  const { col, item } = infoDe(f.itemKey);
   const quando = f.quando ? new Date(f.quando).toLocaleDateString('pt-BR') : '';
   document.getElementById('fotoCheia').innerHTML = `
     <img src="${urlFoto(f)}" alt="Foto ampliada">
     ${f.blobEtq ? `<img class="etq-mini" src="${urlExtra(f.id, f.blobEtq)}" alt="Foto da etiqueta">` : ''}
     <div class="meta">
+      ${item ? `<strong>${item.nome}</strong>${col && col.letra ? ' · tam. ' + col.letra : ''}<br>` : ''}
       ${f.marca ? `<span class="rot">Marca</span> ${f.marca}<br>` : ''}
       ${f.valor ? `<span class="rot">Valor pago</span> ${dinheiro(Number(f.valor))}<br>` : ''}
       ${f.obs ? `<span class="rot">Obs.</span> ${f.obs}<br>` : ''}
@@ -886,9 +976,52 @@ function verFoto(id) {
     </div>
     <div class="acoes-foto">
       <button class="bot-secundario" data-fechar-foto>Fechar</button>
-      <button class="bot-perigo" data-excluir-foto="${f.id}">Excluir foto</button>
+      <button class="bot-secundario" data-refazer-foto="${f.id}">📷 Refazer</button>
+      <button class="bot-perigo" data-excluir-foto="${f.id}">Excluir</button>
     </div>`;
   document.getElementById('fotoCheia').classList.add('aberta');
+}
+
+/* ============ VITRINE ============ */
+let vitrineFiltro = 'todas';
+function abrirVitrine() {
+  document.getElementById('telaHome').classList.remove('ativa');
+  document.getElementById('telaCol').classList.remove('ativa');
+  colAberta = null;
+  renderVitrine();
+  document.getElementById('telaVitrine').classList.add('ativa');
+  window.scrollTo(0, 0);
+}
+function fecharVitrine() {
+  document.getElementById('telaVitrine').classList.remove('ativa');
+  renderHome();
+  document.getElementById('telaHome').classList.add('ativa');
+  window.scrollTo(0, 0);
+}
+function renderVitrine() {
+  const filtros = [['todas', 'Todas'], ...COLECOES.filter(c => c.tipo === 'fase').map(c => [c.id, c.letra]), ['ess', 'Essenciais']];
+  document.getElementById('vitrineFiltros').innerHTML = filtros.map(([id, rotulo]) =>
+    `<button class="vfiltro ${vitrineFiltro === id ? 'ativa' : ''}" data-vfiltro="${id}">${rotulo}</button>`).join('');
+  const fotos = FOTOS.filter(f => {
+    const { col } = infoDe(f.itemKey);
+    if (!col) return false;
+    if (vitrineFiltro === 'todas') return true;
+    if (vitrineFiltro === 'ess') return col.tipo === 'ess';
+    return col.id === vitrineFiltro;
+  });
+  document.getElementById('vitrineConta').textContent =
+    fotos.length ? (fotos.length === 1 ? '1 pecinha fotografada' : fotos.length + ' pecinhas fotografadas') : '';
+  document.getElementById('vitrineGrade').innerHTML = fotos.length
+    ? `<div class="vgrade">` + fotos.map(f => {
+        const { col, item } = infoDe(f.itemKey);
+        return `<button class="vcard" data-ver-foto="${f.id}">
+          <span class="vfoto"><img src="${urlFoto(f)}" alt="${item.nome}"></span>
+          <span class="vmarca">${f.marca || item.nome}</span>
+          <span class="vnome">${f.marca ? item.nome + ' · ' : ''}${col.letra ? 'tam. ' + col.letra : col.nome}</span>
+          ${f.valor ? `<span class="vvalor">${dinheiro(Number(f.valor))}</span>` : ''}
+        </button>`;
+      }).join('') + `</div>`
+    : `<div class="vvazio">A vitrine ainda está vazia por aqui. 🎀<br><br>Fotografe as pecinhas tocando nos cards de cada fase.<br><strong>Dica de catálogo:</strong> no iPhone, segure o dedo sobre a roupinha em uma foto, salve o recorte e escolha ele aqui — a peça aparece limpinha no cartão branco.</div>`;
 }
 
 /* ============ INTERAÇÕES ============ */
@@ -921,6 +1054,14 @@ document.addEventListener('click', (ev) => {
   if (slot) { alvoFoto = slot.dataset.slotFoto; document.getElementById('inputFoto').click(); return; }
   if (alvo.closest('[data-cancelar-foto]')) { fotoPendente = null; renderSheet(); return; }
   if (alvo.closest('[data-ler-ia]')) { lerEtiqueta(); return; }
+
+  /* vitrine */
+  if (alvo.closest('[data-abre-vitrine]')) { abrirVitrine(); return; }
+  if (alvo.closest('[data-vitrine-voltar]')) { fecharVitrine(); return; }
+  const vfBotao = alvo.closest('[data-vfiltro]');
+  if (vfBotao) { vitrineFiltro = vfBotao.dataset.vfiltro; renderVitrine(); return; }
+  const refazer = alvo.closest('[data-refazer-foto]');
+  if (refazer) { trocaFotoId = refazer.dataset.refazerFoto; document.getElementById('inputFoto').click(); return; }
 
   /* ajustes (moeda + IA) */
   if (alvo.closest('[data-abre-ajustes]')) { abrirAjustes(); return; }
@@ -961,6 +1102,7 @@ document.addEventListener('click', (ev) => {
       document.getElementById('fotoCheia').classList.remove('aberta');
       renderSheet();
       if (colAberta) renderCol(colAberta, false);
+      if (document.getElementById('telaVitrine').classList.contains('ativa')) renderVitrine();
       renderHome();
       toast('Foto excluída.');
     });
@@ -992,11 +1134,33 @@ function ajustar(col, item, delta, comCelebracao) {
 document.getElementById('inputFoto').addEventListener('change', async (ev) => {
   const arquivo = ev.target.files && ev.target.files[0];
   ev.target.value = '';
-  if (!arquivo || !itemAberto || !fotoPendente) return;
+  if (!arquivo) return;
+
+  /* refazer uma foto já guardada */
+  if (trocaFotoId != null) {
+    const id = trocaFotoId; trocaFotoId = null;
+    const f = FOTOS.find(x => String(x.id) === String(id));
+    if (!f) return;
+    try {
+      const r = await comprimirFoto(arquivo);
+      f.blob = r.blob;
+      if (_urls.has(f.id)) { try { URL.revokeObjectURL(_urls.get(f.id)); } catch (e) {} _urls.delete(f.id); }
+      await atualizarFotoDB(f);
+      verFoto(f.id);
+      if (document.getElementById('telaVitrine').classList.contains('ativa')) renderVitrine();
+      if (itemAberto) renderSheet();
+      if (!avisoQualidade(r.aval)) toast('📷 Foto refeita!');
+    } catch (e) { toast('Não consegui ler essa imagem — tente outra.'); }
+    return;
+  }
+
+  if (!itemAberto || !fotoPendente) return;
   guardarCampos();
   try {
-    fotoPendente[alvoFoto === 'etq' ? 'etq' : 'peca'] = await comprimirFoto(arquivo);
+    const r = await comprimirFoto(arquivo);
+    fotoPendente[alvoFoto === 'etq' ? 'etq' : 'peca'] = r.blob;
     renderSheet();
+    avisoQualidade(r.aval);
   } catch (e) {
     toast('Não consegui ler essa imagem — tente outra.');
   }
