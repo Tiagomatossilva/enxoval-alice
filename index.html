@@ -248,6 +248,17 @@
   .linha-2 .campo { flex: 1; }
   .check-linha { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--suave); }
   .check-linha input { width: 18px; height: 18px; accent-color: var(--amora); }
+  .meta-linha {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--cartao); border: 1px solid var(--linha); border-radius: 14px;
+    padding: 10px 12px; margin-top: 12px; font-size: 13.5px; color: var(--suave);
+  }
+  .meta-controles { display: flex; align-items: center; gap: 12px; }
+  .meta-controles button {
+    width: 30px; height: 30px; border-radius: 10px; background: var(--veu);
+    color: var(--amora-forte); font-weight: 700; font-size: 16px;
+  }
+  .meta-controles strong { color: var(--tinta); font-variant-numeric: tabular-nums; min-width: 20px; text-align: center; }
   .bot-ia {
     border: 1.5px dashed var(--amora); background: var(--veu); color: var(--amora-forte);
     border-radius: 12px; padding: 11px; font-weight: 650; font-size: 14px;
@@ -433,6 +444,12 @@
       <div class="campo"><label for="cPeso">Peso estimado (kg)</label><input id="cPeso" type="text" inputmode="decimal" placeholder="3,2"></div>
     </div>
     <p class="sem-fotos">Com a data, eu mostro em que meses e estação ela usará cada tamanho; com o peso, quanto tempo o RN deve durar. Dá para ajustar quando quiser — inclusive depois que ela nascer.</p>
+    <div class="grupo-titulo">Estações do ano</div>
+    <div class="chips">
+      <button class="chip" data-lugar="BR">🇧🇷 Brasil</button>
+      <button class="chip" data-lugar="US">🇺🇸 EUA</button>
+    </div>
+    <p class="sem-fotos">Onde a Alice vai usar as roupinhas — define as estações do ano de cada fase.</p>
     <div class="grupo-titulo">Moeda dos valores</div>
     <div class="chips">
       <button class="chip" data-moeda="USD">US$ · dólar</button>
@@ -445,6 +462,7 @@
     </div>
     <p class="sem-fotos">A chave fica guardada <strong>somente neste aparelho</strong> e é usada só para ler as etiquetas das fotos. Cole a chave aqui — nunca a envie por mensagem a ninguém.</p>
     <button class="bot-primario" data-salvar-ajustes style="margin-top:10px">Salvar ajustes</button>
+    <p class="sem-fotos" id="versaoApp" style="text-align:center"></p>
   </div>
 </div>
 
@@ -471,20 +489,47 @@ const COLECOES = [
     itens:[ ...ROUPAS([4,4,4,3,4,2]),
       { id:'tou', emoji:'🎀', nome:'Touca', alvo:1 },
       { id:'luv', emoji:'🧤', nome:'Luvinhas (pares)', alvo:2 },
-      { id:'sai', emoji:'🌸', nome:'Saída de maternidade', alvo:1 } ] },
+      { id:'sai', emoji:'🌸', nome:'Saída de maternidade', alvo:1 } ,
+      { id:'pij', emoji:'🌙', nome:'Pijama', alvo:2 },
+      { id:'sap', emoji:'👟', nome:'Sapatinhos (pares)', alvo:1 },
+      { id:'lac', emoji:'🦋', nome:'Laços & faixas', alvo:2 } ] },
   { id:'p', tipo:'fase', letra:'P', us:'3M', faixa:[1,3], nome:'1 a 3 meses', idade:'4 a 6 kg',
     itens:[ ...ROUPAS([6,6,6,6,6,2]),
-      { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:2 },
-      { id:'tou', emoji:'🎀', nome:'Touca', alvo:1 } ] },
+      { id:'ves', emoji:'👗', nome:'Vestido', alvo:2 },
+      { id:'tou', emoji:'🎀', nome:'Touca', alvo:1 } ,
+      { id:'cnj', emoji:'🎽', nome:'Conjunto', alvo:2 },
+      { id:'sho', emoji:'🩳', nome:'Shorts', alvo:2 },
+      { id:'sia', emoji:'🌷', nome:'Saia', alvo:1 },
+      { id:'pij', emoji:'🌙', nome:'Pijama', alvo:3 },
+      { id:'sap', emoji:'👟', nome:'Sapatinhos (pares)', alvo:2 },
+      { id:'lac', emoji:'🦋', nome:'Laços & faixas', alvo:3 } ] },
   { id:'m', tipo:'fase', letra:'M', us:'6M', faixa:[3,6], nome:'3 a 6 meses', idade:'6 a 8 kg',
     itens:[ ...ROUPAS([6,6,6,6,6,2]),
-      { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:3 } ] },
+      { id:'ves', emoji:'👗', nome:'Vestido', alvo:3 } ,
+      { id:'cnj', emoji:'🎽', nome:'Conjunto', alvo:3 },
+      { id:'sho', emoji:'🩳', nome:'Shorts', alvo:2 },
+      { id:'sia', emoji:'🌷', nome:'Saia', alvo:2 },
+      { id:'pij', emoji:'🌙', nome:'Pijama', alvo:3 },
+      { id:'sap', emoji:'👟', nome:'Sapatinhos (pares)', alvo:2 },
+      { id:'lac', emoji:'🦋', nome:'Laços & faixas', alvo:3 } ] },
   { id:'g', tipo:'fase', letra:'G', us:'9M', faixa:[6,9], nome:'6 a 9 meses', idade:'8 a 9 kg',
     itens:[ ...ROUPAS([5,5,5,5,4,2]),
-      { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:3 } ] },
+      { id:'ves', emoji:'👗', nome:'Vestido', alvo:3 } ,
+      { id:'cnj', emoji:'🎽', nome:'Conjunto', alvo:3 },
+      { id:'sho', emoji:'🩳', nome:'Shorts', alvo:3 },
+      { id:'sia', emoji:'🌷', nome:'Saia', alvo:2 },
+      { id:'pij', emoji:'🌙', nome:'Pijama', alvo:3 },
+      { id:'sap', emoji:'👟', nome:'Sapatinhos (pares)', alvo:2 },
+      { id:'lac', emoji:'🦋', nome:'Laços & faixas', alvo:3 } ] },
   { id:'gg', tipo:'fase', letra:'GG', us:'12M', faixa:[9,12], nome:'9 a 12 meses', idade:'9 a 10 kg',
     itens:[ ...ROUPAS([4,4,4,4,4,2]),
-      { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:3 } ] },
+      { id:'ves', emoji:'👗', nome:'Vestido', alvo:3 } ,
+      { id:'cnj', emoji:'🎽', nome:'Conjunto', alvo:3 },
+      { id:'sho', emoji:'🩳', nome:'Shorts', alvo:3 },
+      { id:'sia', emoji:'🌷', nome:'Saia', alvo:2 },
+      { id:'pij', emoji:'🌙', nome:'Pijama', alvo:3 },
+      { id:'sap', emoji:'👟', nome:'Sapatinhos (pares)', alvo:2 },
+      { id:'lac', emoji:'🦋', nome:'Laços & faixas', alvo:3 } ] },
 
   { id:'mala', tipo:'ess', emoji:'👜', nome:'Mala da maternidade', idade:'pronta na 36ª semana',
     itens:[
@@ -548,13 +593,25 @@ let estado = {};
 try { estado = JSON.parse(localStorage.getItem(CHAVE) || '{}'); } catch (e) { estado = {}; }
 function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(estado)); } catch (e) {} }
 const chaveItem = (col, item) => col.id + '.' + item.id;
-const tenho = (col, item) => Math.min(estado[chaveItem(col, item)] || 0, item.alvo);
+const tenho = (col, item) => estado[chaveItem(col, item)] || 0;
+
+/* metas editáveis: a quantidade sugerida é só o ponto de partida */
+const METAS_CHAVE = 'enxoval-alice-metas';
+let METAS = {};
+try { METAS = JSON.parse(localStorage.getItem(METAS_CHAVE) || '{}'); } catch (e) { METAS = {}; }
+function salvarMetas() { try { localStorage.setItem(METAS_CHAVE, JSON.stringify(METAS)); } catch (e) {} }
+function alvoDe(col, item) {
+  const m = METAS[chaveItem(col, item)];
+  return (typeof m === 'number' && m >= 1) ? m : item.alvo;
+}
 
 function statusCol(col) {
   let t = 0, a = 0, completos = 0;
   for (const item of col.itens) {
-    t += tenho(col, item); a += item.alvo;
-    if (tenho(col, item) >= item.alvo) completos++;
+    const alvo = alvoDe(col, item);
+    const q = tenho(col, item);
+    t += Math.min(q, alvo); a += alvo;
+    if (q >= alvo) completos++;
   }
   return { tem: t, alvo: a, pct: a ? t / a : 0, itensCompletos: completos, totalItens: col.itens.length };
 }
@@ -637,7 +694,8 @@ function valorCol(col) {
 }
 /* ============ CONFIGURAÇÃO (moeda + chave da IA) ============ */
 const CFG_CHAVE = 'enxoval-alice-cfg';
-let CONFIG = { moeda: 'USD', chave: '' };
+const VERSAO = 7;
+let CONFIG = { moeda: 'USD', chave: '', lugar: 'BR' };
 try { CONFIG = Object.assign(CONFIG, JSON.parse(localStorage.getItem(CFG_CHAVE) || '{}')); } catch (e) {}
 function salvarCfg() { try { localStorage.setItem(CFG_CHAVE, JSON.stringify(CONFIG)); } catch (e) {} }
 
@@ -662,7 +720,7 @@ function fmtMes(d) { return MESES_ABREV[d.getMonth()] + '/' + String(d.getFullYe
 function estacaoDe(d) {
   const m = d.getMonth();
   const idx = (m === 11 || m <= 1) ? 0 : m <= 4 ? 1 : m <= 7 ? 2 : 3;
-  const norte = CONFIG.moeda !== 'BRL'; /* comprando em US$ → hemisfério norte; em R$ → sul */
+  const norte = CONFIG.lugar === 'US'; /* onde a Alice vai usar as roupinhas (ajustes) */
   const nomes = norte
     ? ['inverno ❄️', 'primavera 🌸', 'verão ☀️', 'outono 🍂']
     : ['verão ☀️', 'outono 🍂', 'inverno ❄️', 'primavera 🌸'];
@@ -848,18 +906,19 @@ function renderCol(id, anim) {
     (grupo.nome ? `<div class="grupo-titulo">${grupo.nome}</div>` : '') +
     `<div class="grade-itens">` + grupo.itens.map(item => {
       const t = tenho(col, item);
-      const completo = t >= item.alvo;
+      const alvo = alvoDe(col, item);
+      const completo = t >= alvo;
       const nFotos = fotosDe(chaveItem(col, item)).length;
       return `<div class="item-cartao ${completo ? 'completo' : t > 0 ? 'tem-algum' : ''}" data-item="${item.id}" role="button" tabindex="0">
         <span class="selo">✓</span>
         ${nFotos > 0 ? `<span class="foto-badge">📷 ${nFotos}</span>` : ''}
         <span class="emoji">${item.emoji}</span>
         <span class="nome">${item.nome}</span>
-        <span class="progresso"><strong>${t}</strong> de ${item.alvo}</span>
+        <span class="progresso"><strong>${t}</strong> de ${alvo}</span>
         <div class="stepper">
           <button data-menos="${item.id}" aria-label="Tirar um ${item.nome}" ${t <= 0 ? 'disabled' : ''}>−</button>
-          <span class="mini-barra"><i style="width:${(t / item.alvo) * 100}%"></i></span>
-          <button data-mais="${item.id}" aria-label="Adicionar um ${item.nome}" ${completo ? 'disabled' : ''}>+</button>
+          <span class="mini-barra"><i style="width:${Math.min(100, (t / alvo) * 100)}%"></i></span>
+          <button data-mais="${item.id}" aria-label="Adicionar um ${item.nome}">+</button>
         </div>
       </div>`;
     }).join('') + `</div>`
@@ -912,6 +971,7 @@ function renderSheet() {
   const k = chaveItem(col, item);
   const fotos = fotosDe(k);
   const t = tenho(col, item);
+  const alvoI = alvoDe(col, item);
   const gasto = somaValores(fotos);
 
   let html = `<div class="sheet-alca"></div>
@@ -919,9 +979,13 @@ function renderSheet() {
       <span class="emoji">${item.emoji}</span>
       <div class="titulo">
         <h3 class="display">${item.nome}</h3>
-        <div class="sub">${col.nome}${col.letra ? ' · tam. ' + col.letra + ' (EUA ' + col.us + ')' : ''} · ${t} de ${item.alvo}${gasto > 0 ? ' · ' + dinheiro(gasto) : ''}</div>
+        <div class="sub">${col.nome}${col.letra ? ' · tam. ' + col.letra + ' (EUA ' + col.us + ')' : ''} · ${t} de ${alvoI}${gasto > 0 ? ' · ' + dinheiro(gasto) : ''}</div>
       </div>
       <button class="sheet-fechar" data-fechar-sheet aria-label="Fechar">✕</button>
+    </div>
+    <div class="meta-linha">
+      <span>🎯 Meta desta pecinha</span>
+      <span class="meta-controles"><button data-meta-menos aria-label="Diminuir meta">−</button><strong>${alvoI}</strong><button data-meta-mais aria-label="Aumentar meta">+</button></span>
     </div>`;
 
   if (fotoPendente) {
@@ -942,7 +1006,7 @@ function renderSheet() {
         <div class="campo"><label for="fMarca">Marca</label><input id="fMarca" type="text" placeholder="ex.: Carter's" value="${(c.marca || '').replace(/"/g, '&quot;')}"></div>
       </div>
       <div class="campo"><label for="fObs">Observação</label><input id="fObs" type="text" placeholder="ex.: presente da vovó, cor rosa" value="${(c.obs || '').replace(/"/g, '&quot;')}"></div>
-      <label class="check-linha"><input type="checkbox" id="fSomar" ${t < item.alvo ? (c.somar === false ? '' : 'checked') : 'disabled'}> Somar 1 no contador (${t} de ${item.alvo})</label>
+      <label class="check-linha"><input type="checkbox" id="fSomar" ${c.somar === false ? '' : t < alvoI ? 'checked' : ''}> Somar 1 no contador (${t} de ${alvoI})</label>
       <button class="bot-primario" data-salvar-foto ${temFoto ? '' : 'disabled'}>Salvar</button>
       <button class="bot-secundario" data-cancelar-foto>Cancelar</button>
     </div>`;
@@ -998,8 +1062,12 @@ function fecharVitrine() {
   document.getElementById('telaHome').classList.add('ativa');
   window.scrollTo(0, 0);
 }
+function faixaRotulo(col) {
+  if (!col.faixa) return col.nome;
+  return col.id === 'rn' ? 'RN' : col.faixa[0] + ' a ' + col.faixa[1] + ' meses';
+}
 function renderVitrine() {
-  const filtros = [['todas', 'Todas'], ...COLECOES.filter(c => c.tipo === 'fase').map(c => [c.id, c.letra]), ['ess', 'Essenciais']];
+  const filtros = [['todas', 'Todas'], ...COLECOES.filter(c => c.tipo === 'fase').map(c => [c.id, c.id === 'rn' ? 'RN' : c.faixa[0] + ' a ' + c.faixa[1] + 'm']), ['ess', 'Essenciais']];
   document.getElementById('vitrineFiltros').innerHTML = filtros.map(([id, rotulo]) =>
     `<button class="vfiltro ${vitrineFiltro === id ? 'ativa' : ''}" data-vfiltro="${id}">${rotulo}</button>`).join('');
   const fotos = FOTOS.filter(f => {
@@ -1017,7 +1085,7 @@ function renderVitrine() {
         return `<button class="vcard" data-ver-foto="${f.id}">
           <span class="vfoto"><img src="${urlFoto(f)}" alt="${item.nome}"></span>
           <span class="vmarca">${f.marca || item.nome}</span>
-          <span class="vnome">${f.marca ? item.nome + ' · ' : ''}${col.letra ? 'tam. ' + col.letra : col.nome}</span>
+          <span class="vnome">${f.marca ? item.nome + ' · ' : ''}${faixaRotulo(col)}</span>
           ${f.valor ? `<span class="vvalor">${dinheiro(Number(f.valor))}</span>` : ''}
         </button>`;
       }).join('') + `</div>`
@@ -1046,6 +1114,19 @@ document.addEventListener('click', (ev) => {
   const card = alvo.closest('[data-item]');
   if (card && colAberta) { abrirItem(colAberta, card.dataset.item); return; }
 
+  /* meta editável na ficha */
+  if ((alvo.closest('[data-meta-mais]') || alvo.closest('[data-meta-menos]')) && itemAberto) {
+    const col = COLECOES.find(c => c.id === itemAberto.colId);
+    const item = col.itens.find(i => i.id === itemAberto.itemId);
+    const k = chaveItem(col, item);
+    METAS[k] = Math.max(1, alvoDe(col, item) + (alvo.closest('[data-meta-mais]') ? 1 : -1));
+    salvarMetas();
+    renderSheet();
+    if (colAberta) renderCol(colAberta, false);
+    renderHome();
+    return;
+  }
+
   /* ficha */
   if (alvo.closest('[data-fechar-sheet]')) { fecharSheet(); return; }
   if (alvo.id === 'sheetFundo') { fecharSheet(); return; }
@@ -1072,6 +1153,15 @@ document.addEventListener('click', (ev) => {
   const chip = alvo.closest('[data-moeda]');
   if (chip) {
     CONFIG.moeda = chip.dataset.moeda;
+    salvarCfg();
+    atualizarChips();
+    renderHome();
+    if (colAberta) renderCol(colAberta, false);
+    return;
+  }
+  const chipLugar = alvo.closest('[data-lugar]');
+  if (chipLugar) {
+    CONFIG.lugar = chipLugar.dataset.lugar;
     salvarCfg();
     atualizarChips();
     renderHome();
@@ -1113,12 +1203,14 @@ document.addEventListener('click', (ev) => {
 function ajustar(col, item, delta, comCelebracao) {
   const antes = statusCol(col);
   const k = chaveItem(col, item);
-  estado[k] = Math.max(0, Math.min(item.alvo, tenho(col, item) + delta));
+  const alvo = alvoDe(col, item);
+  const qAntes = tenho(col, item);
+  estado[k] = Math.max(0, qAntes + delta);
   salvar();
   const depois = statusCol(col);
   if (colAberta === col.id) renderCol(col.id, false);
 
-  if (comCelebracao && delta > 0 && tenho(col, item) >= item.alvo) {
+  if (comCelebracao && delta > 0 && estado[k] >= alvo && qAntes < alvo) {
     if (depois.tem >= depois.alvo && antes.tem < antes.alvo) {
       celebrar(true);
       toast(col.tipo === 'fase' ? `🎉 Fase ${col.nome} completa! A Alice está pronta para ela.` : `🎉 ${col.nome} completo!`);
@@ -1172,7 +1264,7 @@ function salvarFotoPendente() {
   if (!principal) return;
   const col = COLECOES.find(c => c.id === itemAberto.colId);
   const item = col.itens.find(i => i.id === itemAberto.itemId);
-  const somar = document.getElementById('fSomar').checked && !document.getElementById('fSomar').disabled;
+  const somar = document.getElementById('fSomar').checked;
   const reg = {
     itemKey: chaveItem(col, item),
     blob: principal,
@@ -1201,8 +1293,10 @@ function abrirAjustes() {
   document.getElementById('ajustesFundo').classList.add('aberta');
 }
 function atualizarChips() {
-  const chips = document.querySelectorAll ? document.querySelectorAll('[data-moeda]') : [];
-  for (const b of chips) b.classList.toggle('ativa', b.dataset.moeda === CONFIG.moeda);
+  const cm = document.querySelectorAll ? document.querySelectorAll('[data-moeda]') : [];
+  for (const b of cm) b.classList.toggle('ativa', b.dataset.moeda === CONFIG.moeda);
+  const cl = document.querySelectorAll ? document.querySelectorAll('[data-lugar]') : [];
+  for (const b of cl) b.classList.toggle('ativa', b.dataset.lugar === (CONFIG.lugar || 'BR'));
 }
 
 /* ============ LEITURA DE ETIQUETA COM IA ============ */
@@ -1371,11 +1465,12 @@ document.getElementById('botaoPdf').addEventListener('click', () => {
     html += `<h2>${col.nome}${col.letra ? ' (tamanho ' + col.letra + ' / EUA ' + col.us + ')' : ''} — ${s.tem} de ${s.alvo}${gasto > 0 ? ' · ' + dinheiro(gasto) : ''}</h2><table>`;
     for (const item of col.itens) {
       const t = tenho(col, item);
-      const falta = item.alvo - t;
+      const alvo = alvoDe(col, item);
+      const falta = Math.max(0, alvo - t);
       const vitem = somaValores(fotosDe(chaveItem(col, item)));
       html += `<tr>
         <td>${falta > 0 ? '☐' : '☑'} ${item.nome}</td>
-        <td class="q">${t} de ${item.alvo}</td>
+        <td class="q">${t} de ${alvo}</td>
         <td class="q">${vitem > 0 ? dinheiro(vitem) : ''}</td>
         <td class="q">${falta > 0 ? `<span class="falta-marca">faltam ${falta}</span>` : '<span class="ok-marca">completo ✓</span>'}</td>
       </tr>`;
@@ -1388,6 +1483,7 @@ document.getElementById('botaoPdf').addEventListener('click', () => {
 });
 
 /* ============ INÍCIO ============ */
+document.getElementById('versaoApp').textContent = 'Enxoval da Alice · versão ' + VERSAO;
 renderHome();
 iniciarDB().then(() => {
   renderHome();
