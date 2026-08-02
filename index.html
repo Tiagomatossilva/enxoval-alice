@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enxoval da Alice</title>
+<meta name="theme-color" content="#FAF5F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#251C20" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icone-192.png">
+<link rel="apple-touch-icon" href="icone-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Alice">
+<style>
+  /* ============ TOKENS ============ */
+  :root {
+    --fundo: #FAF5F0;         /* porcelana quente */
+    --cartao: #FFFFFF;
+    --tinta: #453631;         /* cacau */
+    --suave: #9C8A82;         /* cinza-rosado */
+    --linha: #EFE4DC;
+    --amora: #C96A85;         /* rosa-amora (ação/progresso) */
+    --amora-forte: #B05570;
+    --veu: #F6E3E9;           /* rosa-véu (fundos suaves) */
+    --dourado: #C9A227;
+    --anel-fundo: #EFE2DA;
+    --sombra: 0 2px 10px rgba(69, 54, 49, .07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fundo: #251C20;
+      --cartao: #322629;
+      --tinta: #F4E9E7;
+      --suave: #B39CA4;
+      --linha: #453539;
+      --amora: #E792A9;
+      --amora-forte: #F0A8BC;
+      --veu: #402E35;
+      --dourado: #E0BC4E;
+      --anel-fundo: #453539;
+      --sombra: 0 2px 10px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="light"] {
+    --fundo: #FAF5F0; --cartao: #FFFFFF; --tinta: #453631; --suave: #9C8A82;
+    --linha: #EFE4DC; --amora: #C96A85; --amora-forte: #B05570; --veu: #F6E3E9;
+    --dourado: #C9A227; --anel-fundo: #EFE2DA; --sombra: 0 2px 10px rgba(69, 54, 49, .07);
+  }
+  :root[data-theme="dark"] {
+    --fundo: #251C20; --cartao: #322629; --tinta: #F4E9E7; --suave: #B39CA4;
+    --linha: #453539; --amora: #E792A9; --amora-forte: #F0A8BC; --veu: #402E35;
+    --dourado: #E0BC4E; --anel-fundo: #453539; --sombra: 0 2px 10px rgba(0, 0, 0, .25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--fundo);
+    color: var(--tinta);
+    font-family: ui-rounded, -apple-system, "SF Pro Rounded", system-ui, "Segoe UI", sans-serif;
+    min-height: 100dvh;
+  }
+  .display { font-family: ui-serif, "New York", Georgia, "Times New Roman", serif; font-style: italic; }
+
+  .app { max-width: 460px; margin: 0 auto; padding: 20px 18px calc(40px + env(safe-area-inset-bottom)); }
+
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button:focus-visible { outline: 2px solid var(--amora); outline-offset: 2px; border-radius: 8px; }
+
+  /* ============ CAPA / HOME ============ */
+  .capa { display: flex; align-items: center; gap: 16px; padding: 8px 2px 22px; }
+  .capa-texto { flex: 1; min-width: 0; }
+  .olho { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--suave); margin-bottom: 2px; }
+  .capa h1 { font-size: 40px; font-weight: 600; line-height: 1.05; text-wrap: balance; }
+  .capa .sub { margin-top: 8px; font-size: 14px; color: var(--suave); }
+  .capa .sub strong { color: var(--amora-forte); font-weight: 600; }
+
+  .anel-wrap { position: relative; flex-shrink: 0; }
+  .anel-wrap .anel-num { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .anel-num .pct { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .anel-num .leg { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--suave); }
+
+  .secao-titulo { display: flex; align-items: baseline; justify-content: space-between; margin: 26px 2px 12px; }
+  .secao-titulo h2 { font-size: 21px; font-weight: 600; }
+  .secao-titulo .conta { font-size: 12px; color: var(--suave); font-variant-numeric: tabular-nums; }
+
+  /* trilha de fases */
+  .trilha { display: flex; flex-direction: column; gap: 10px; }
+  .fase-cartao {
+    display: flex; align-items: center; gap: 14px; text-align: left; width: 100%;
+    background: var(--cartao); border: 1px solid var(--linha); border-radius: 18px;
+    padding: 12px 14px; box-shadow: var(--sombra);
+    transition: transform .12s ease;
+  }
+  .fase-cartao:active { transform: scale(.98); }
+  .fase-anel { position: relative; flex-shrink: 0; }
+  .fase-anel .letra { position: absolute; inset: 0; display: grid; place-content: center; font-size: 15px; font-weight: 700; }
+  .fase-info { flex: 1; min-width: 0; }
+  .fase-info .nome { font-size: 16px; font-weight: 650; }
+  .fase-info .idade { font-size: 12.5px; color: var(--suave); margin-top: 1px; }
+  .fase-status { font-size: 12px; color: var(--suave); text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .fase-status .falta { color: var(--amora-forte); font-weight: 600; }
+  .fase-cartao.completa { background: linear-gradient(135deg, var(--veu), var(--cartao)); border-color: var(--amora); }
+  .fase-cartao.completa .fase-status { color: var(--amora-forte); font-weight: 600; }
+  .seta { color: var(--suave); flex-shrink: 0; }
+
+  /* essenciais em grade */
+  .grade-ess { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ess-cartao {
+    text-align: left; background: var(--cartao); border: 1px solid var(--linha);
+    border-radius: 18px; padding: 14px; box-shadow: var(--sombra);
+    display: flex; flex-direction: column; gap: 8px; transition: transform .12s ease;
+  }
+  .ess-cartao:active { transform: scale(.97); }
+  .ess-cartao .emoji { font-size: 22px; }
+  .ess-cartao .nome { font-size: 14px; font-weight: 650; line-height: 1.2; }
+  .ess-cartao .conta { font-size: 11.5px; color: var(--suave); font-variant-numeric: tabular-nums; }
+  .barra { height: 5px; border-radius: 3px; background: var(--anel-fundo); overflow: hidden; }
+  .barra > i { display: block; height: 100%; border-radius: 3px; background: var(--amora); transition: width .35s ease; }
+  .ess-cartao.completa { background: linear-gradient(135deg, var(--veu), var(--cartao)); border-color: var(--amora); }
+
+  .acoes { margin-top: 28px; display: flex; flex-direction: column; gap: 10px; }
+  .botao-pdf {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--tinta); color: var(--fundo); border-radius: 16px;
+    padding: 15px; font-size: 15px; font-weight: 650;
+  }
+  .nota-rodape { text-align: center; font-size: 12px; color: var(--suave); margin-top: 18px; line-height: 1.5; }
+
+  /* ============ TELA DA COLEÇÃO ============ */
+  .col-topo { display: flex; align-items: center; gap: 10px; padding: 4px 0 16px; }
+  .voltar {
+    width: 40px; height: 40px; border-radius: 12px; background: var(--cartao);
+    border: 1px solid var(--linha); display: grid; place-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .col-titulo { flex: 1; min-width: 0; }
+  .col-titulo h2 { font-size: 24px; font-weight: 600; line-height: 1.1; }
+  .col-titulo .idade { font-size: 13px; color: var(--suave); margin-top: 2px; }
+  .col-resumo {
+    display: flex; align-items: center; gap: 14px; background: var(--cartao);
+    border: 1px solid var(--linha); border-radius: 18px; padding: 14px 16px;
+    box-shadow: var(--sombra); margin-bottom: 18px;
+  }
+  .col-resumo .texto { flex: 1; font-size: 13.5px; color: var(--suave); line-height: 1.45; }
+  .col-resumo .texto strong { color: var(--tinta); }
+
+  .grupo-titulo { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--suave); margin: 20px 2px 10px; }
+
+  .grade-itens { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .item-cartao {
+    background: var(--cartao); border: 1.5px dashed var(--linha); border-radius: 18px;
+    padding: 12px; display: flex; flex-direction: column; gap: 6px; position: relative;
+    transition: border-color .25s ease, background .25s ease;
+  }
+  .item-cartao .emoji { font-size: 24px; filter: grayscale(.9); opacity: .55; transition: filter .25s, opacity .25s; }
+  .item-cartao .nome { font-size: 13.5px; font-weight: 650; line-height: 1.25; min-height: 2.5em; display: flex; align-items: flex-start; }
+  .item-cartao .progresso { font-size: 12px; color: var(--suave); font-variant-numeric: tabular-nums; }
+  .item-cartao .progresso strong { color: var(--tinta); }
+  .item-cartao.tem-algum { border-style: solid; }
+  .item-cartao.tem-algum .emoji { filter: none; opacity: 1; }
+  .item-cartao.completo { border: 1.5px solid var(--amora); background: linear-gradient(150deg, var(--veu), var(--cartao)); }
+  .item-cartao.completo .emoji { filter: none; opacity: 1; }
+  .item-cartao.completo .progresso { color: var(--amora-forte); font-weight: 600; }
+  .selo {
+    position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--amora); color: #fff; display: grid; place-content: center; font-size: 12px;
+    opacity: 0; transform: scale(.4); transition: opacity .2s, transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .item-cartao.completo .selo { opacity: 1; transform: scale(1); }
+  .foto-badge {
+    position: absolute; top: 10px; left: 44px; font-size: 10.5px; font-weight: 650;
+    background: var(--veu); color: var(--amora-forte); border-radius: 8px; padding: 2px 6px;
+  }
+
+  .stepper { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  .stepper button {
+    width: 34px; height: 34px; border-radius: 11px; background: var(--veu);
+    color: var(--amora-forte); font-size: 18px; font-weight: 700;
+    display: grid; place-content: center; transition: transform .1s ease;
+  }
+  .stepper button:active { transform: scale(.9); }
+  .stepper button:disabled { opacity: .35; }
+  .stepper .mini-barra { flex: 1; height: 5px; border-radius: 3px; background: var(--anel-fundo); overflow: hidden; }
+  .stepper .mini-barra > i { display: block; height: 100%; background: var(--amora); border-radius: 3px; transition: width .3s ease; }
+
+  /* ============ FICHA DO ITEM (SHEET) ============ */
+  .sheet-fundo {
+    position: fixed; inset: 0; background: rgba(40, 25, 30, .45); z-index: 70;
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .sheet-fundo.aberta { display: flex; }
+  .sheet {
+    background: var(--fundo); border-radius: 24px 24px 0 0; width: 100%; max-width: 460px;
+    padding: 10px 18px calc(26px + env(safe-area-inset-bottom)); max-height: 86dvh; overflow-y: auto;
+    animation: sobe .25s ease;
+  }
+  @keyframes sobe { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+  .sheet-alca { width: 40px; height: 4px; border-radius: 2px; background: var(--linha); margin: 4px auto 14px; }
+  .sheet-topo { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .sheet-topo .emoji { font-size: 30px; }
+  .sheet-topo .titulo { flex: 1; }
+  .sheet-topo h3 { font-size: 20px; font-weight: 600; }
+  .sheet-topo .sub { font-size: 12.5px; color: var(--suave); margin-top: 1px; font-variant-numeric: tabular-nums; }
+  .sheet-fechar {
+    width: 34px; height: 34px; border-radius: 11px; background: var(--cartao);
+    border: 1px solid var(--linha); display: grid; place-content: center; font-size: 15px; flex-shrink: 0;
+  }
+  .sheet .grupo-titulo { margin-top: 16px; }
+
+  .fgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .fthumb {
+    aspect-ratio: 1; border-radius: 14px; overflow: hidden; position: relative;
+    border: 1px solid var(--linha); background: var(--cartao); padding: 0;
+  }
+  .fthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .fthumb .fvalor {
+    position: absolute; left: 0; right: 0; bottom: 0; font-size: 10.5px; font-weight: 650;
+    background: rgba(40, 25, 30, .55); color: #fff; padding: 3px 6px; text-align: left;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fadd {
+    aspect-ratio: 1; border-radius: 14px; border: 1.5px dashed var(--amora);
+    background: var(--veu); color: var(--amora-forte);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    font-size: 12px; font-weight: 650;
+  }
+  .fadd .ico { font-size: 22px; }
+
+  .fform { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .fform .prev { width: 100%; max-height: 220px; object-fit: contain; border-radius: 14px; background: var(--cartao); border: 1px solid var(--linha); }
+  .campo { display: flex; flex-direction: column; gap: 4px; }
+  .campo label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); }
+  .campo input {
+    border: 1px solid var(--linha); border-radius: 12px; padding: 11px 12px;
+    font: inherit; background: var(--cartao); color: var(--tinta); width: 100%;
+  }
+  .campo input:focus-visible { outline: 2px solid var(--amora); outline-offset: 1px; }
+  .linha-2 { display: flex; gap: 8px; }
+  .linha-2 .campo { flex: 1; }
+  .check-linha { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--suave); }
+  .check-linha input { width: 18px; height: 18px; accent-color: var(--amora); }
+  .bot-ia {
+    border: 1.5px dashed var(--amora); background: var(--veu); color: var(--amora-forte);
+    border-radius: 12px; padding: 11px; font-weight: 650; font-size: 14px;
+  }
+  .bot-primario { background: var(--amora); color: #fff; border-radius: 12px; padding: 13px; font-weight: 650; font-size: 15px; }
+  .bot-secundario { background: var(--cartao); border: 1px solid var(--linha); color: var(--suave); border-radius: 12px; padding: 12px; font-weight: 650; font-size: 14px; }
+  .sem-fotos { font-size: 13px; color: var(--suave); margin-top: 10px; line-height: 1.5; }
+  .bot-ia:disabled, .bot-primario:disabled { opacity: .45; }
+
+  .fslot {
+    aspect-ratio: 1; flex: 1; border: 1.5px dashed var(--linha); border-radius: 14px;
+    background: var(--cartao); display: flex; flex-direction: column; gap: 4px;
+    align-items: center; justify-content: center; font-size: 12px; font-weight: 650;
+    color: var(--suave); overflow: hidden; padding: 0;
+  }
+  .fslot img { width: 100%; height: 100%; object-fit: cover; }
+  .fslot.tem { border-style: solid; border-color: var(--amora); }
+  .fslot .ico { font-size: 24px; }
+
+  /* ajustes (moeda + IA) */
+  .botao-config { background: var(--cartao); color: var(--tinta); border: 1px solid var(--linha); }
+  .chips { display: flex; gap: 8px; margin-top: 10px; }
+  .chip {
+    flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid var(--linha);
+    background: var(--cartao); font-weight: 650; font-size: 14px; color: var(--suave);
+  }
+  .chip.ativa { border-color: var(--amora); background: var(--veu); color: var(--amora-forte); }
+  .foto-cheia .etq-mini { max-height: 16dvh; margin-top: 8px; border-radius: 12px; }
+
+  /* foto ampliada */
+  .foto-cheia {
+    position: fixed; inset: 0; z-index: 80; background: rgba(20, 12, 15, .88);
+    display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
+  }
+  .foto-cheia.aberta { display: flex; }
+  .foto-cheia img { max-width: 100%; max-height: 58dvh; border-radius: 16px; }
+  .foto-cheia .meta {
+    background: var(--fundo); color: var(--tinta); border-radius: 16px; padding: 14px 16px;
+    margin-top: 12px; width: 100%; max-width: 420px; font-size: 14px; line-height: 1.55;
+  }
+  .foto-cheia .meta .rot { color: var(--suave); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  .foto-cheia .acoes-foto { display: flex; gap: 8px; margin-top: 10px; width: 100%; max-width: 420px; }
+  .foto-cheia .acoes-foto button { flex: 1; }
+  .bot-perigo { background: #A94456; color: #fff; border-radius: 12px; padding: 12px; font-weight: 650; font-size: 14px; }
+
+  /* ============ TOAST + CONFETE ============ */
+  .toast {
+    position: fixed; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 20px); background: var(--tinta); color: var(--fundo);
+    border-radius: 14px; padding: 12px 18px; font-size: 14px; font-weight: 600;
+    opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 90;
+    max-width: 88vw; text-align: center;
+  }
+  .toast.mostra { opacity: 1; transform: translate(-50%, 0); }
+  #confete { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+  .tela { display: none; }
+  .tela.ativa { display: block; animation: surge .22s ease; }
+  @keyframes surge { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+
+  /* ============ IMPRESSÃO (PDF) ============ */
+  #areaImpressao { display: none; }
+  @media print {
+    body { background: #fff; color: #222; }
+    .app, .toast, #confete, .sheet-fundo, .foto-cheia { display: none !important; }
+    #areaImpressao { display: block; font-family: Georgia, serif; padding: 10mm 6mm; }
+    #areaImpressao h1 { font-style: italic; font-size: 26pt; margin-bottom: 2mm; }
+    #areaImpressao .imp-sub { font-size: 10pt; color: #777; margin-bottom: 8mm; }
+    #areaImpressao h2 { font-size: 13pt; margin: 7mm 0 2.5mm; border-bottom: 1.5pt solid #C96A85; padding-bottom: 1.5mm; break-after: avoid; }
+    #areaImpressao table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+    #areaImpressao td { padding: 1.6mm 1mm; border-bottom: .5pt solid #ddd; }
+    #areaImpressao td.q { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    #areaImpressao .falta-marca { color: #B05570; font-weight: bold; }
+    #areaImpressao .ok-marca { color: #6B8F6B; }
+    #areaImpressao .imp-rodape { margin-top: 10mm; font-size: 9pt; color: #999; font-style: italic; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ HOME ============ -->
+  <section id="telaHome" class="tela ativa">
+    <header class="capa">
+      <div class="capa-texto">
+        <div class="olho">Enxoval da</div>
+        <h1 class="display">Alice</h1>
+        <div class="sub" id="resumoGeral"></div>
+      </div>
+      <div class="anel-wrap" id="anelGeral"></div>
+    </header>
+
+    <div class="secao-titulo">
+      <h2 class="display">Fases do crescimento</h2>
+      <span class="conta" id="contaFases"></span>
+    </div>
+    <div class="trilha" id="trilhaFases"></div>
+
+    <div class="secao-titulo">
+      <h2 class="display">Essenciais</h2>
+      <span class="conta" id="contaEss"></span>
+    </div>
+    <div class="grade-ess" id="gradeEss"></div>
+
+    <div class="acoes">
+      <button class="botao-pdf" id="botaoPdf">🖨️&ensp;Gerar PDF da lista</button>
+      <button class="botao-pdf botao-config" data-abre-ajustes>⚙️&ensp;Moeda e leitura por IA</button>
+    </div>
+    <p class="nota-rodape">As quantidades são sugestões baseadas em listas de enxoval brasileiras —<br>toque em uma fase para ajustar como quiser. 🎀</p>
+  </section>
+
+  <!-- ============ COLEÇÃO ============ -->
+  <section id="telaCol" class="tela">
+    <div class="col-topo">
+      <button class="voltar" id="botaoVoltar" aria-label="Voltar">←</button>
+      <div class="col-titulo">
+        <h2 class="display" id="colNome"></h2>
+        <div class="idade" id="colIdade"></div>
+      </div>
+    </div>
+    <div class="col-resumo">
+      <div class="anel-wrap" id="colAnel"></div>
+      <div class="texto" id="colTexto"></div>
+    </div>
+    <div id="colConteudo"></div>
+  </section>
+</div>
+
+<!-- ============ FICHA DO ITEM ============ -->
+<div class="sheet-fundo" id="sheetFundo">
+  <div class="sheet" role="dialog" aria-modal="true" id="sheet"></div>
+</div>
+<input type="file" id="inputFoto" accept="image/*" hidden>
+
+<!-- ============ AJUSTES (MOEDA + IA) ============ -->
+<div class="sheet-fundo" id="ajustesFundo">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-alca"></div>
+    <div class="sheet-topo">
+      <span class="emoji">⚙️</span>
+      <div class="titulo"><h3 class="display">Moeda e IA</h3><div class="sub">Ajustes do enxoval</div></div>
+      <button class="sheet-fechar" data-fechar-ajustes aria-label="Fechar">✕</button>
+    </div>
+    <div class="grupo-titulo">Moeda dos valores</div>
+    <div class="chips">
+      <button class="chip" data-moeda="USD">US$ · dólar</button>
+      <button class="chip" data-moeda="BRL">R$ · real</button>
+    </div>
+    <div class="grupo-titulo">Leitura de etiqueta com IA</div>
+    <div class="campo" style="margin-top:10px">
+      <label for="cChave">Chave da IA (Anthropic)</label>
+      <input id="cChave" type="password" placeholder="sk-ant-…" autocomplete="off">
+    </div>
+    <p class="sem-fotos">A chave fica guardada <strong>somente neste aparelho</strong> e é usada só para ler as etiquetas das fotos. Cole a chave aqui — nunca a envie por mensagem a ninguém.</p>
+    <button class="bot-primario" data-salvar-ajustes style="margin-top:10px">Salvar ajustes</button>
+  </div>
+</div>
+
+<!-- foto ampliada -->
+<div class="foto-cheia" id="fotoCheia"></div>
+
+<div class="toast" id="toast"></div>
+<canvas id="confete"></canvas>
+<div id="areaImpressao"></div>
+
+<script>
+/* ============ DADOS ============ */
+const ROUPAS = (q) => ([
+  { id:'bmc',  emoji:'👕', nome:'Body manga curta',  alvo:q[0] },
+  { id:'bml',  emoji:'👚', nome:'Body manga longa',  alvo:q[1] },
+  { id:'mij',  emoji:'👖', nome:'Mijão / culote',    alvo:q[2] },
+  { id:'mac',  emoji:'🐥', nome:'Macacão',           alvo:q[3] },
+  { id:'mei',  emoji:'🧦', nome:'Meias (pares)',     alvo:q[4] },
+  { id:'cas',  emoji:'🧥', nome:'Casaquinho',        alvo:q[5] },
+]);
+
+const COLECOES = [
+  { id:'rn', tipo:'fase', letra:'RN', us:'NB', nome:'Recém-nascida', idade:'0 a 1 mês · até 4 kg',
+    itens:[ ...ROUPAS([4,4,4,3,4,2]),
+      { id:'tou', emoji:'🎀', nome:'Touca', alvo:1 },
+      { id:'luv', emoji:'🧤', nome:'Luvinhas (pares)', alvo:2 },
+      { id:'sai', emoji:'🌸', nome:'Saída de maternidade', alvo:1 } ] },
+  { id:'p', tipo:'fase', letra:'P', us:'3M', nome:'1 a 3 meses', idade:'4 a 6 kg',
+    itens:[ ...ROUPAS([6,6,6,6,6,2]),
+      { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:2 },
+      { id:'tou', emoji:'🎀', nome:'Touca', alvo:1 } ] },
+  { id:'m', tipo:'fase', letra:'M', us:'6M', nome:'3 a 6 meses', idade:'6 a 8 kg',
+    itens:[ ...ROUPAS([6,6,6,6,6,2]),
+      { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:3 } ] },
+  { id:'g', tipo:'fase', letra:'G', us:'9M', nome:'6 a 9 meses', idade:'8 a 9 kg',
+    itens:[ ...ROUPAS([5,5,5,5,4,2]),
+      { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:3 } ] },
+  { id:'gg', tipo:'fase', letra:'GG', us:'12M', nome:'9 a 12 meses', idade:'9 a 10 kg',
+    itens:[ ...ROUPAS([4,4,4,4,4,2]),
+      { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:3 } ] },
+
+  { id:'mala', tipo:'ess', emoji:'👜', nome:'Mala da maternidade', idade:'pronta na 36ª semana',
+    itens:[
+      { id:'cam', emoji:'🌙', nome:'Camisolas de amamentação', alvo:3 },
+      { id:'rou', emoji:'🥿', nome:'Chinelos', alvo:2 },
+      { id:'abs', emoji:'🤍', nome:'Absorventes de seio (cx)', alvo:1 },
+      { id:'hig', emoji:'🧴', nome:'Kit de higiene da mamãe', alvo:1 },
+      { id:'sda', emoji:'✨', nome:'Roupa de saída da mamãe', alvo:1 },
+      { id:'doc', emoji:'📋', nome:'Documentos e exames', alvo:1 } ] },
+  { id:'banho', tipo:'ess', emoji:'🛁', nome:'Higiene & banho', idade:'',
+    itens:[
+      { id:'ban', emoji:'🛁', nome:'Banheira', alvo:1 },
+      { id:'toa', emoji:'🐤', nome:'Toalhas com capuz', alvo:3 },
+      { id:'sab', emoji:'🧼', nome:'Sabonete neutro', alvo:2 },
+      { id:'pom', emoji:'🧴', nome:'Pomada de assadura', alvo:2 },
+      { id:'fbo', emoji:'🤍', nome:'Fraldas de boca', alvo:10 },
+      { id:'esc', emoji:'🪮', nome:'Escova e pente', alvo:1 },
+      { id:'tes', emoji:'✂️', nome:'Tesourinha', alvo:1 },
+      { id:'len', emoji:'💧', nome:'Lenços umedecidos (pct)', alvo:3 } ] },
+  { id:'quarto', tipo:'ess', emoji:'🌙', nome:'Quartinho', idade:'',
+    itens:[
+      { id:'ber', emoji:'🛏️', nome:'Berço + colchão', alvo:1 },
+      { id:'len', emoji:'☁️', nome:'Jogos de lençol', alvo:3 },
+      { id:'pro', emoji:'💦', nome:'Protetor impermeável', alvo:2 },
+      { id:'mle', emoji:'🌸', nome:'Mantas leves', alvo:2 },
+      { id:'mqe', emoji:'🧸', nome:'Mantas quentinhas', alvo:2 },
+      { id:'cue', emoji:'🤍', nome:'Cueiros', alvo:3 },
+      { id:'aba', emoji:'🕯️', nome:'Abajur / luz noturna', alvo:1 },
+      { id:'bab', emoji:'📡', nome:'Babá eletrônica', alvo:1 } ] },
+  { id:'passeio', tipo:'ess', emoji:'🚗', nome:'Transporte & segurança', idade:'',
+    itens:[
+      { id:'bcf', emoji:'🚗', nome:'Bebê conforto', alvo:1 },
+      { id:'car', emoji:'🛒', nome:'Carrinho de bebê', alvo:1 },
+      { id:'moi', emoji:'🧺', nome:'Moisés', alvo:1 },
+      { id:'sli', emoji:'🤱', nome:'Sling / canguru', alvo:1 },
+      { id:'bol', emoji:'👜', nome:'Bolsa maternidade', alvo:1 },
+      { id:'tro', emoji:'🧷', nome:'Trocador portátil', alvo:1 } ] },
+  { id:'alimentacao', tipo:'ess', emoji:'🥣', nome:'Alimentação', idade:'',
+    itens:[
+      { id:'alm', emoji:'🌙', nome:'Almofada de amamentação', alvo:1, grupo:'0 a 6 meses' },
+      { id:'sut', emoji:'🤍', nome:'Sutiãs de amamentação', alvo:4, grupo:'0 a 6 meses' },
+      { id:'bom', emoji:'🍼', nome:'Bomba tira-leite', alvo:1, grupo:'0 a 6 meses' },
+      { id:'bbd', emoji:'🐤', nome:'Babadores', alvo:6, grupo:'0 a 6 meses' },
+      { id:'cad', emoji:'🪑', nome:'Cadeirão', alvo:1, grupo:'A partir dos 6 meses' },
+      { id:'col', emoji:'🥄', nome:'Colheres de silicone', alvo:2, grupo:'A partir dos 6 meses' },
+      { id:'pra', emoji:'🍽️', nome:'Pratinho com ventosa', alvo:2, grupo:'A partir dos 6 meses' },
+      { id:'cop', emoji:'🥛', nome:'Copo de transição', alvo:1, grupo:'A partir dos 6 meses' } ] },
+  { id:'farmacinha', tipo:'ess', emoji:'🩹', nome:'Farmacinha', idade:'',
+    itens:[
+      { id:'ter', emoji:'🌡️', nome:'Termômetro digital', alvo:1 },
+      { id:'asp', emoji:'👃', nome:'Aspirador nasal', alvo:1 },
+      { id:'sor', emoji:'💧', nome:'Soro fisiológico', alvo:5 },
+      { id:'alc', emoji:'🧴', nome:'Álcool 70%', alvo:1 },
+      { id:'cor', emoji:'💅', nome:'Cortador de unha', alvo:1 },
+      { id:'bte', emoji:'♨️', nome:'Bolsa térmica p/ cólica', alvo:1 } ] },
+];
+
+/* ============ ESTADO (contadores) ============ */
+const CHAVE = 'enxoval-alice-v1';
+let estado = {};
+try { estado = JSON.parse(localStorage.getItem(CHAVE) || '{}'); } catch (e) { estado = {}; }
+function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(estado)); } catch (e) {} }
+const chaveItem = (col, item) => col.id + '.' + item.id;
+const tenho = (col, item) => Math.min(estado[chaveItem(col, item)] || 0, item.alvo);
+
+function statusCol(col) {
+  let t = 0, a = 0, completos = 0;
+  for (const item of col.itens) {
+    t += tenho(col, item); a += item.alvo;
+    if (tenho(col, item) >= item.alvo) completos++;
+  }
+  return { tem: t, alvo: a, pct: a ? t / a : 0, itensCompletos: completos, totalItens: col.itens.length };
+}
+function statusGeral() {
+  let t = 0, a = 0, colsCompletas = 0;
+  for (const col of COLECOES) {
+    const s = statusCol(col); t += s.tem; a += s.alvo;
+    if (s.tem >= s.alvo) colsCompletas++;
+  }
+  return { tem: t, alvo: a, pct: a ? t / a : 0, colsCompletas };
+}
+
+/* ============ FOTOS (IndexedDB) ============ */
+let db = null;
+let FOTOS = [];   // { id, itemKey, blob, valor, marca, obs, quando }
+const _urls = new Map();
+function urlFoto(f) {
+  if (!_urls.has(f.id)) { try { _urls.set(f.id, URL.createObjectURL(f.blob)); } catch (e) { return ''; } }
+  return _urls.get(f.id);
+}
+function iniciarDB() {
+  return new Promise((resolve) => {
+    if (typeof indexedDB === 'undefined') return resolve();
+    try {
+      const rq = indexedDB.open('enxoval-alice-db', 1);
+      rq.onupgradeneeded = () => {
+        const d = rq.result;
+        if (!d.objectStoreNames.contains('fotos')) d.createObjectStore('fotos', { keyPath: 'id', autoIncrement: true });
+      };
+      rq.onsuccess = () => {
+        db = rq.result;
+        try {
+          const pega = db.transaction('fotos').objectStore('fotos').getAll();
+          pega.onsuccess = () => { FOTOS = pega.result || []; resolve(); };
+          pega.onerror = () => resolve();
+        } catch (e) { resolve(); }
+      };
+      rq.onerror = () => resolve();
+    } catch (e) { resolve(); }
+  });
+}
+function guardarFoto(reg) {
+  return new Promise((resolve) => {
+    if (!db) { reg.id = 'mem-' + (FOTOS.length + 1) + '-' + Date.now(); FOTOS.push(reg); return resolve(reg); }
+    const rq = db.transaction('fotos', 'readwrite').objectStore('fotos').add(reg);
+    rq.onsuccess = () => { reg.id = rq.result; FOTOS.push(reg); resolve(reg); };
+    rq.onerror = () => { reg.id = 'mem-' + Date.now(); FOTOS.push(reg); resolve(reg); };
+  });
+}
+function removerFoto(id) {
+  return new Promise((resolve) => {
+    FOTOS = FOTOS.filter(f => f.id !== id);
+    if (_urls.has(id)) { try { URL.revokeObjectURL(_urls.get(id)); } catch (e) {} _urls.delete(id); }
+    if (!db || String(id).startsWith('mem-')) return resolve();
+    const rq = db.transaction('fotos', 'readwrite').objectStore('fotos').delete(id);
+    rq.onsuccess = () => resolve(); rq.onerror = () => resolve();
+  });
+}
+const fotosDe = (itemKey) => FOTOS.filter(f => f.itemKey === itemKey);
+const somaValores = (fotos) => fotos.reduce((s, f) => s + (Number(f.valor) || 0), 0);
+function valorCol(col) {
+  let v = 0;
+  for (const item of col.itens) v += somaValores(fotosDe(chaveItem(col, item)));
+  return v;
+}
+/* ============ CONFIGURAÇÃO (moeda + chave da IA) ============ */
+const CFG_CHAVE = 'enxoval-alice-cfg';
+let CONFIG = { moeda: 'USD', chave: '' };
+try { CONFIG = Object.assign(CONFIG, JSON.parse(localStorage.getItem(CFG_CHAVE) || '{}')); } catch (e) {}
+function salvarCfg() { try { localStorage.setItem(CFG_CHAVE, JSON.stringify(CONFIG)); } catch (e) {} }
+
+function dinheiro(v) {
+  const s = v.toFixed(2);
+  if (CONFIG.moeda === 'BRL') {
+    const [int, dec] = s.split('.');
+    return 'R$ ' + int.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + dec;
+  }
+  const [int, dec] = s.split('.');
+  return 'US$ ' + int.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + dec;
+}
+function parseValor(txt) {
+  txt = (txt || '').trim();
+  if (!txt) return null;
+  if (CONFIG.moeda === 'BRL') txt = txt.replace(/\./g, '').replace(',', '.');
+  else txt = txt.replace(/,/g, '');
+  const n = Number(txt.replace(/[^\d.]/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+async function comprimirFoto(arquivo) {
+  const bmp = await createImageBitmap(arquivo);
+  const MAX = 1000;
+  const esc = Math.min(1, MAX / Math.max(bmp.width, bmp.height));
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.round(bmp.width * esc));
+  cv.height = Math.max(1, Math.round(bmp.height * esc));
+  cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+  return await new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error('sem blob')), 'image/jpeg', .72));
+}
+
+/* ============ ANEL SVG ============ */
+function anel(pct, tam, esp) {
+  const r = (tam - esp) / 2, c = 2 * Math.PI * r;
+  const off = c * (1 - Math.min(pct, 1));
+  return `<svg width="${tam}" height="${tam}" viewBox="0 0 ${tam} ${tam}" aria-hidden="true">
+    <circle cx="${tam/2}" cy="${tam/2}" r="${r}" fill="none" stroke="var(--anel-fundo)" stroke-width="${esp}"/>
+    <circle cx="${tam/2}" cy="${tam/2}" r="${r}" fill="none"
+      stroke="${pct >= 1 ? 'var(--dourado)' : 'var(--amora)'}" stroke-width="${esp}" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}"
+      transform="rotate(-90 ${tam/2} ${tam/2})" style="transition: stroke-dashoffset .5s ease"/>
+  </svg>`;
+}
+
+/* ============ RENDER HOME ============ */
+function renderHome() {
+  const g = statusGeral();
+  const investido = somaValores(FOTOS);
+  document.getElementById('anelGeral').innerHTML =
+    anel(g.pct, 92, 9) +
+    `<div class="anel-num"><div class="pct">${Math.round(g.pct * 100)}%</div><div class="leg">pronto</div></div>`;
+  document.getElementById('resumoGeral').innerHTML =
+    (g.tem >= g.alvo
+      ? `Tudo pronto para a chegada dela! 💛`
+      : `<strong>${g.alvo - g.tem}</strong> itens faltam para completar o enxoval`) +
+    (investido > 0 ? `<br><strong>${dinheiro(investido)}</strong> investidos até agora` : '');
+
+  const fases = COLECOES.filter(c => c.tipo === 'fase');
+  document.getElementById('contaFases').textContent =
+    fases.filter(c => { const s = statusCol(c); return s.tem >= s.alvo; }).length + ' de ' + fases.length + ' completas';
+  document.getElementById('trilhaFases').innerHTML = fases.map(col => {
+    const s = statusCol(col);
+    const completa = s.tem >= s.alvo;
+    return `<button class="fase-cartao ${completa ? 'completa' : ''}" data-col="${col.id}">
+      <div class="fase-anel">${anel(s.pct, 52, 5)}<div class="letra">${col.letra}</div></div>
+      <div class="fase-info"><div class="nome">${col.nome}</div><div class="idade">${col.idade}${col.us ? ' · EUA ' + col.us : ''}</div></div>
+      <div class="fase-status">${completa ? 'Fase completa ✨' : `<span class="falta">faltam ${s.alvo - s.tem}</span><br>${s.tem} de ${s.alvo} itens`}</div>
+      <span class="seta">›</span>
+    </button>`;
+  }).join('');
+
+  const ess = COLECOES.filter(c => c.tipo === 'ess');
+  document.getElementById('contaEss').textContent =
+    ess.filter(c => { const s = statusCol(c); return s.tem >= s.alvo; }).length + ' de ' + ess.length + ' completos';
+  document.getElementById('gradeEss').innerHTML = ess.map(col => {
+    const s = statusCol(col);
+    const completa = s.tem >= s.alvo;
+    return `<button class="ess-cartao ${completa ? 'completa' : ''}" data-col="${col.id}">
+      <span class="emoji">${col.emoji}</span>
+      <span class="nome">${col.nome}</span>
+      <span class="conta">${completa ? 'Completo ✨' : s.tem + ' de ' + s.alvo}</span>
+      <span class="barra"><i style="width:${s.pct * 100}%"></i></span>
+    </button>`;
+  }).join('');
+}
+
+/* ============ RENDER COLEÇÃO ============ */
+let colAberta = null;
+function renderCol(id, anim) {
+  const col = COLECOES.find(c => c.id === id);
+  if (!col) return;
+  colAberta = id;
+  const s = statusCol(col);
+  const gasto = valorCol(col);
+  document.getElementById('colNome').textContent = col.nome;
+  document.getElementById('colIdade').textContent = [col.letra ? 'Tamanho ' + col.letra + ' · EUA ' + col.us : null, col.idade].filter(Boolean).join(' · ');
+  document.getElementById('colAnel').innerHTML =
+    anel(s.pct, 74, 7) +
+    `<div class="anel-num"><div class="pct" style="font-size:16px">${Math.round(s.pct * 100)}%</div></div>`;
+  document.getElementById('colTexto').innerHTML =
+    (s.tem >= s.alvo
+      ? `<strong>Página completa!</strong> Todos os ${s.alvo} itens desta ${col.tipo === 'fase' ? 'fase' : 'categoria'} já estão garantidos. ✨`
+      : `<strong>${s.itensCompletos} de ${s.totalItens} itens completos.</strong> Faltam ${s.alvo - s.tem} pecinhas para fechar esta ${col.tipo === 'fase' ? 'fase' : 'categoria'}.`) +
+    (gasto > 0 ? ` <strong>${dinheiro(gasto)}</strong> investidos aqui.` : '');
+
+  const grupos = [];
+  for (const item of col.itens) {
+    const g = item.grupo || '';
+    let grupo = grupos.find(x => x.nome === g);
+    if (!grupo) { grupo = { nome: g, itens: [] }; grupos.push(grupo); }
+    grupo.itens.push(item);
+  }
+  document.getElementById('colConteudo').innerHTML = grupos.map(grupo =>
+    (grupo.nome ? `<div class="grupo-titulo">${grupo.nome}</div>` : '') +
+    `<div class="grade-itens">` + grupo.itens.map(item => {
+      const t = tenho(col, item);
+      const completo = t >= item.alvo;
+      const nFotos = fotosDe(chaveItem(col, item)).length;
+      return `<div class="item-cartao ${completo ? 'completo' : t > 0 ? 'tem-algum' : ''}" data-item="${item.id}" role="button" tabindex="0">
+        <span class="selo">✓</span>
+        ${nFotos > 0 ? `<span class="foto-badge">📷 ${nFotos}</span>` : ''}
+        <span class="emoji">${item.emoji}</span>
+        <span class="nome">${item.nome}</span>
+        <span class="progresso"><strong>${t}</strong> de ${item.alvo}</span>
+        <div class="stepper">
+          <button data-menos="${item.id}" aria-label="Tirar um ${item.nome}" ${t <= 0 ? 'disabled' : ''}>−</button>
+          <span class="mini-barra"><i style="width:${(t / item.alvo) * 100}%"></i></span>
+          <button data-mais="${item.id}" aria-label="Adicionar um ${item.nome}" ${completo ? 'disabled' : ''}>+</button>
+        </div>
+      </div>`;
+    }).join('') + `</div>`
+  ).join('');
+
+  document.getElementById('telaHome').classList.remove('ativa');
+  const tela = document.getElementById('telaCol');
+  tela.classList.add('ativa');
+  if (anim === false) tela.style.animation = 'none', requestAnimationFrame(() => tela.style.animation = '');
+}
+
+/* ============ FICHA DO ITEM ============ */
+let itemAberto = null;      // { colId, itemId }
+let fotoPendente = null;    // { peca: Blob|null, etq: Blob|null, campos: {} } quando o formulário está aberto
+let alvoFoto = 'peca';      // qual slot recebe a próxima foto
+const _urlTmp = new WeakMap();
+function urlTmp(blob) {
+  if (!_urlTmp.has(blob)) { try { _urlTmp.set(blob, URL.createObjectURL(blob)); } catch (e) { return ''; } }
+  return _urlTmp.get(blob);
+}
+function urlExtra(id, blob) {
+  const k = id + ':etq';
+  if (!_urls.has(k)) { try { _urls.set(k, URL.createObjectURL(blob)); } catch (e) { return ''; } }
+  return _urls.get(k);
+}
+function guardarCampos() {
+  if (!fotoPendente) return;
+  const v = document.getElementById('fValor'), m = document.getElementById('fMarca'),
+        o = document.getElementById('fObs'), s = document.getElementById('fSomar');
+  fotoPendente.campos = {
+    valor: v ? v.value : '', marca: m ? m.value : '', obs: o ? o.value : '',
+    somar: s ? s.checked : true,
+  };
+}
+function abrirItem(colId, itemId) {
+  itemAberto = { colId, itemId };
+  fotoPendente = null;
+  renderSheet();
+  document.getElementById('sheetFundo').classList.add('aberta');
+}
+function fecharSheet() {
+  itemAberto = null; fotoPendente = null;
+  document.getElementById('sheetFundo').classList.remove('aberta');
+}
+function renderSheet() {
+  if (!itemAberto) return;
+  const col = COLECOES.find(c => c.id === itemAberto.colId);
+  const item = col.itens.find(i => i.id === itemAberto.itemId);
+  const k = chaveItem(col, item);
+  const fotos = fotosDe(k);
+  const t = tenho(col, item);
+  const gasto = somaValores(fotos);
+
+  let html = `<div class="sheet-alca"></div>
+    <div class="sheet-topo">
+      <span class="emoji">${item.emoji}</span>
+      <div class="titulo">
+        <h3 class="display">${item.nome}</h3>
+        <div class="sub">${col.nome}${col.letra ? ' · tam. ' + col.letra + ' (EUA ' + col.us + ')' : ''} · ${t} de ${item.alvo}${gasto > 0 ? ' · ' + dinheiro(gasto) : ''}</div>
+      </div>
+      <button class="sheet-fechar" data-fechar-sheet aria-label="Fechar">✕</button>
+    </div>`;
+
+  if (fotoPendente) {
+    const c = fotoPendente.campos || {};
+    const temFoto = fotoPendente.peca || fotoPendente.etq;
+    html += `<div class="fform">
+      <div class="linha-2">
+        <button class="fslot ${fotoPendente.peca ? 'tem' : ''}" data-slot-foto="peca" aria-label="Foto da peça">
+          ${fotoPendente.peca ? `<img src="${urlTmp(fotoPendente.peca)}" alt="Foto da peça">` : `<span class="ico">📷</span><span>Foto da peça</span>`}
+        </button>
+        <button class="fslot ${fotoPendente.etq ? 'tem' : ''}" data-slot-foto="etq" aria-label="Foto da etiqueta">
+          ${fotoPendente.etq ? `<img src="${urlTmp(fotoPendente.etq)}" alt="Foto da etiqueta">` : `<span class="ico">🏷️</span><span>Foto da etiqueta</span>`}
+        </button>
+      </div>
+      <button class="bot-ia" id="botaoIA" data-ler-ia ${temFoto ? '' : 'disabled'}>✨&ensp;Ler etiqueta com IA</button>
+      <div class="linha-2">
+        <div class="campo"><label for="fValor">Valor pago (${CONFIG.moeda === 'BRL' ? 'R$' : 'US$'})</label><input id="fValor" type="text" inputmode="decimal" placeholder="${CONFIG.moeda === 'BRL' ? '0,00' : '0.00'}" value="${(c.valor || '').replace(/"/g, '&quot;')}"></div>
+        <div class="campo"><label for="fMarca">Marca</label><input id="fMarca" type="text" placeholder="ex.: Carter's" value="${(c.marca || '').replace(/"/g, '&quot;')}"></div>
+      </div>
+      <div class="campo"><label for="fObs">Observação</label><input id="fObs" type="text" placeholder="ex.: presente da vovó, cor rosa" value="${(c.obs || '').replace(/"/g, '&quot;')}"></div>
+      <label class="check-linha"><input type="checkbox" id="fSomar" ${t < item.alvo ? (c.somar === false ? '' : 'checked') : 'disabled'}> Somar 1 no contador (${t} de ${item.alvo})</label>
+      <button class="bot-primario" data-salvar-foto ${temFoto ? '' : 'disabled'}>Salvar</button>
+      <button class="bot-secundario" data-cancelar-foto>Cancelar</button>
+    </div>`;
+  } else {
+    html += `<div class="grupo-titulo">Fotos das pecinhas</div>
+      <div class="fgrid">
+        <button class="fadd" data-add-foto><span class="ico">📷</span>adicionar</button>
+        ${fotos.map(f => `<button class="fthumb" data-ver-foto="${f.id}">
+          <img src="${urlFoto(f)}" alt="Foto de ${item.nome}">
+          ${(f.valor || f.marca) ? `<span class="fvalor">${[f.marca, f.valor ? dinheiro(Number(f.valor)) : null].filter(Boolean).join(' · ')}</span>` : ''}
+        </button>`).join('')}
+      </div>`;
+    if (!fotos.length) html += `<p class="sem-fotos">Tire uma foto de cada pecinha comprada — com valor e marca, o enxoval fica organizado e vira uma recordação. As fotos ficam guardadas só neste aparelho. 🤍</p>`;
+  }
+  document.getElementById('sheet').innerHTML = html;
+}
+function verFoto(id) {
+  const f = FOTOS.find(x => String(x.id) === String(id));
+  if (!f) return;
+  const quando = f.quando ? new Date(f.quando).toLocaleDateString('pt-BR') : '';
+  document.getElementById('fotoCheia').innerHTML = `
+    <img src="${urlFoto(f)}" alt="Foto ampliada">
+    ${f.blobEtq ? `<img class="etq-mini" src="${urlExtra(f.id, f.blobEtq)}" alt="Foto da etiqueta">` : ''}
+    <div class="meta">
+      ${f.marca ? `<span class="rot">Marca</span> ${f.marca}<br>` : ''}
+      ${f.valor ? `<span class="rot">Valor pago</span> ${dinheiro(Number(f.valor))}<br>` : ''}
+      ${f.obs ? `<span class="rot">Obs.</span> ${f.obs}<br>` : ''}
+      ${quando ? `<span class="rot">Adicionada em</span> ${quando}` : ''}
+    </div>
+    <div class="acoes-foto">
+      <button class="bot-secundario" data-fechar-foto>Fechar</button>
+      <button class="bot-perigo" data-excluir-foto="${f.id}">Excluir foto</button>
+    </div>`;
+  document.getElementById('fotoCheia').classList.add('aberta');
+}
+
+/* ============ INTERAÇÕES ============ */
+document.addEventListener('click', (ev) => {
+  const alvo = ev.target;
+
+  /* home → coleção */
+  const abre = alvo.closest('[data-col]');
+  if (abre) { renderCol(abre.dataset.col); window.scrollTo(0, 0); return; }
+
+  /* steppers */
+  const mais = alvo.closest('[data-mais]');
+  const menos = alvo.closest('[data-menos]');
+  if ((mais || menos) && colAberta) {
+    const col = COLECOES.find(c => c.id === colAberta);
+    const item = col.itens.find(i => i.id === (mais ? mais.dataset.mais : menos.dataset.menos));
+    ajustar(col, item, mais ? 1 : -1, true);
+    return;
+  }
+
+  /* card do item → ficha */
+  const card = alvo.closest('[data-item]');
+  if (card && colAberta) { abrirItem(colAberta, card.dataset.item); return; }
+
+  /* ficha */
+  if (alvo.closest('[data-fechar-sheet]')) { fecharSheet(); return; }
+  if (alvo.id === 'sheetFundo') { fecharSheet(); return; }
+  if (alvo.closest('[data-add-foto]')) { fotoPendente = { peca: null, etq: null, campos: {} }; renderSheet(); return; }
+  const slot = alvo.closest('[data-slot-foto]');
+  if (slot) { alvoFoto = slot.dataset.slotFoto; document.getElementById('inputFoto').click(); return; }
+  if (alvo.closest('[data-cancelar-foto]')) { fotoPendente = null; renderSheet(); return; }
+  if (alvo.closest('[data-ler-ia]')) { lerEtiqueta(); return; }
+
+  /* ajustes (moeda + IA) */
+  if (alvo.closest('[data-abre-ajustes]')) { abrirAjustes(); return; }
+  if (alvo.closest('[data-fechar-ajustes]') || alvo.id === 'ajustesFundo') {
+    document.getElementById('ajustesFundo').classList.remove('aberta');
+    return;
+  }
+  const chip = alvo.closest('[data-moeda]');
+  if (chip) {
+    CONFIG.moeda = chip.dataset.moeda;
+    salvarCfg();
+    atualizarChips();
+    renderHome();
+    if (colAberta) renderCol(colAberta, false);
+    return;
+  }
+  if (alvo.closest('[data-salvar-ajustes]')) {
+    CONFIG.chave = (document.getElementById('cChave').value || '').trim();
+    salvarCfg();
+    document.getElementById('ajustesFundo').classList.remove('aberta');
+    toast(CONFIG.chave ? '✨ Chave guardada — a leitura de etiqueta está ativa!' : 'Ajustes salvos.');
+    return;
+  }
+  if (alvo.closest('[data-salvar-foto]')) { salvarFotoPendente(); return; }
+  const ver = alvo.closest('[data-ver-foto]');
+  if (ver) { verFoto(ver.dataset.verFoto); return; }
+  if (alvo.closest('[data-fechar-foto]')) { document.getElementById('fotoCheia').classList.remove('aberta'); return; }
+  const exc = alvo.closest('[data-excluir-foto]');
+  if (exc) {
+    if (exc.dataset.confirma !== '1') { exc.dataset.confirma = '1'; exc.textContent = 'Toque de novo para excluir'; return; }
+    removerFoto(isNaN(Number(exc.dataset.excluirFoto)) ? exc.dataset.excluirFoto : Number(exc.dataset.excluirFoto)).then(() => {
+      document.getElementById('fotoCheia').classList.remove('aberta');
+      renderSheet();
+      if (colAberta) renderCol(colAberta, false);
+      renderHome();
+      toast('Foto excluída.');
+    });
+    return;
+  }
+});
+
+function ajustar(col, item, delta, comCelebracao) {
+  const antes = statusCol(col);
+  const k = chaveItem(col, item);
+  estado[k] = Math.max(0, Math.min(item.alvo, tenho(col, item) + delta));
+  salvar();
+  const depois = statusCol(col);
+  if (colAberta === col.id) renderCol(col.id, false);
+
+  if (comCelebracao && delta > 0 && tenho(col, item) >= item.alvo) {
+    if (depois.tem >= depois.alvo && antes.tem < antes.alvo) {
+      celebrar(true);
+      toast(col.tipo === 'fase' ? `🎉 Fase ${col.nome} completa! A Alice está pronta para ela.` : `🎉 ${col.nome} completo!`);
+      const g = statusGeral();
+      if (g.tem >= g.alvo) setTimeout(() => toast('💛 ENXOVAL 100% COMPLETO! Agora é só esperar a Alice chegar.'), 2600);
+    } else {
+      celebrar(false);
+      toast(`✓ ${item.nome}: completo!`);
+    }
+  }
+}
+
+document.getElementById('inputFoto').addEventListener('change', async (ev) => {
+  const arquivo = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!arquivo || !itemAberto || !fotoPendente) return;
+  guardarCampos();
+  try {
+    fotoPendente[alvoFoto === 'etq' ? 'etq' : 'peca'] = await comprimirFoto(arquivo);
+    renderSheet();
+  } catch (e) {
+    toast('Não consegui ler essa imagem — tente outra.');
+  }
+});
+
+function salvarFotoPendente() {
+  if (!fotoPendente || !itemAberto) return;
+  const principal = fotoPendente.peca || fotoPendente.etq;
+  if (!principal) return;
+  const col = COLECOES.find(c => c.id === itemAberto.colId);
+  const item = col.itens.find(i => i.id === itemAberto.itemId);
+  const somar = document.getElementById('fSomar').checked && !document.getElementById('fSomar').disabled;
+  const reg = {
+    itemKey: chaveItem(col, item),
+    blob: principal,
+    blobEtq: fotoPendente.peca ? fotoPendente.etq : null,
+    valor: parseValor(document.getElementById('fValor').value),
+    marca: (document.getElementById('fMarca').value || '').trim() || null,
+    obs: (document.getElementById('fObs').value || '').trim() || null,
+    quando: new Date().toISOString(),
+  };
+  guardarFoto(reg).then(() => {
+    fotoPendente = null;
+    if (somar) ajustar(col, item, 1, true);
+    else if (colAberta) renderCol(colAberta, false);
+    renderHome();
+    renderSheet();
+    toast('📷 Foto guardada no álbum!');
+  });
+}
+
+/* ============ AJUSTES ============ */
+function abrirAjustes() {
+  document.getElementById('cChave').value = CONFIG.chave || '';
+  atualizarChips();
+  document.getElementById('ajustesFundo').classList.add('aberta');
+}
+function atualizarChips() {
+  const chips = document.querySelectorAll ? document.querySelectorAll('[data-moeda]') : [];
+  for (const b of chips) b.classList.toggle('ativa', b.dataset.moeda === CONFIG.moeda);
+}
+
+/* ============ LEITURA DE ETIQUETA COM IA ============ */
+function blobBase64(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1]);
+    r.onerror = () => rej(r.error || new Error('erro ao ler arquivo'));
+    r.readAsDataURL(blob);
+  });
+}
+
+async function lerEtiqueta() {
+  if (!fotoPendente || !itemAberto) return;
+  if (!CONFIG.chave) {
+    toast('Cole a chave da IA em “⚙️ Moeda e leitura por IA”, na tela inicial, para ativar a leitura.');
+    return;
+  }
+  const imagens = [fotoPendente.etq, fotoPendente.peca].filter(Boolean);
+  if (!imagens.length) { toast('Adicione a foto da etiqueta primeiro.'); return; }
+  const bot = document.getElementById('botaoIA');
+  if (bot) { bot.disabled = true; bot.textContent = '✨ Lendo a etiqueta…'; }
+  try {
+    const col = COLECOES.find(c => c.id === itemAberto.colId);
+    const item = col.itens.find(i => i.id === itemAberto.itemId);
+    const blocos = [];
+    for (const b of imagens) {
+      blocos.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: await blobBase64(b) } });
+    }
+    blocos.push({ type: 'text', text:
+      `Leia a(s) foto(s) desta peça de enxoval de bebê (a primeira imagem tende a ser a etiqueta). ` +
+      `Contexto: o item é "${item.nome}"${col.letra ? `, fase "${col.nome}" (tamanho brasileiro ${col.letra}, equivalente americano ${col.us})` : ''}. ` +
+      `Tabela de tamanhos EUA→Brasil: NB≈RN, 3M≈P, 6M≈M, 9M≈G, 12M≈GG. ` +
+      `Extraia: valor pago como número (se houver preço promocional e original, use o promocional), moeda (USD ou BRL), marca, ` +
+      `tamanho exatamente como escrito na etiqueta, e uma observação curta e útil (cor, tipo de peça, composição do tecido; ` +
+      `se o tamanho da etiqueta não corresponder à fase esperada, avise). Use null para o que não estiver visível.` });
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': CONFIG.chave,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-5',
+        max_tokens: 1500,
+        output_config: {
+          effort: 'low',
+          format: { type: 'json_schema', schema: {
+            type: 'object', additionalProperties: false,
+            required: ['valor', 'moeda', 'marca', 'tamanho', 'observacoes'],
+            properties: {
+              valor: { type: ['number', 'null'], description: 'Valor pago, apenas o número' },
+              moeda: { type: ['string', 'null'], description: 'USD ou BRL' },
+              marca: { type: ['string', 'null'] },
+              tamanho: { type: ['string', 'null'], description: 'Como escrito na etiqueta, ex.: 3M, RN, P' },
+              observacoes: { type: ['string', 'null'], description: 'Curta: cor, tipo, composição, alertas' },
+            },
+          } },
+        },
+        messages: [{ role: 'user', content: blocos }],
+      }),
+    });
+    if (!resp.ok) {
+      const corpo = await resp.json().catch(() => null);
+      const msg = corpo && corpo.error && corpo.error.message ? corpo.error.message : ('erro ' + resp.status);
+      throw new Error(resp.status === 401 ? 'chave da IA inválida — confira nos ajustes.' : msg);
+    }
+    const dados = await resp.json();
+    if (dados.stop_reason === 'refusal') throw new Error('a IA não conseguiu processar esta imagem.');
+    const blocoTexto = (dados.content || []).find(b => b.type === 'text');
+    if (!blocoTexto) throw new Error('resposta vazia da IA.');
+    const lido = JSON.parse(blocoTexto.text);
+
+    if (lido.valor != null) {
+      document.getElementById('fValor').value =
+        CONFIG.moeda === 'BRL' ? lido.valor.toFixed(2).replace('.', ',') : lido.valor.toFixed(2);
+    }
+    if (lido.marca) document.getElementById('fMarca').value = lido.marca;
+    const obs = [];
+    if (lido.tamanho) obs.push('Etiqueta: tam. ' + lido.tamanho);
+    if (lido.observacoes) obs.push(lido.observacoes);
+    if (lido.moeda && ((lido.moeda === 'USD') !== (CONFIG.moeda === 'USD'))) {
+      obs.push('⚠️ preço na etiqueta em ' + lido.moeda + ', mas o app está em ' + (CONFIG.moeda === 'USD' ? 'US$' : 'R$'));
+    }
+    if (obs.length) document.getElementById('fObs').value = obs.join(' · ');
+    guardarCampos();
+    toast('✨ Etiqueta lida! Confira os campos e salve.');
+  } catch (e) {
+    if (e instanceof TypeError) {
+      toast('Sem acesso à IA por aqui: a página de visualização bloqueia chamadas externas. Funciona na versão instalada do app (ou sem internet, tente de novo).');
+    } else {
+      toast('Não consegui ler a etiqueta: ' + e.message);
+    }
+  } finally {
+    const b = document.getElementById('botaoIA');
+    if (b) { b.disabled = false; b.textContent = '✨ Ler etiqueta com IA'; }
+  }
+}
+
+document.getElementById('botaoVoltar').addEventListener('click', () => {
+  colAberta = null;
+  document.getElementById('telaCol').classList.remove('ativa');
+  renderHome();
+  document.getElementById('telaHome').classList.add('ativa');
+  window.scrollTo(0, 0);
+});
+
+/* ============ TOAST ============ */
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('mostra');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('mostra'), 2800);
+}
+
+/* ============ CONFETE ============ */
+const reduzMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function celebrar(grande) {
+  if (reduzMovimento) return;
+  const cv = document.getElementById('confete');
+  const ctx = cv.getContext('2d');
+  cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio;
+  cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const cores = ['#C96A85', '#E8A7BB', '#C9A227', '#F0D9A0', '#9DB89A'];
+  const n = grande ? 120 : 26;
+  const parts = Array.from({ length: n }, () => ({
+    x: innerWidth / 2 + (Math.random() - .5) * (grande ? innerWidth * .7 : 140),
+    y: grande ? -20 - Math.random() * 80 : innerHeight * .65,
+    vx: (Math.random() - .5) * (grande ? 3 : 5),
+    vy: grande ? 1 + Math.random() * 2.5 : -4 - Math.random() * 4,
+    r: 3 + Math.random() * 4,
+    cor: cores[Math.floor(Math.random() * cores.length)],
+    rot: Math.random() * Math.PI, vr: (Math.random() - .5) * .2,
+  }));
+  let quadros = 0;
+  const max = grande ? 190 : 70;
+  (function passo() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const p of parts) {
+      p.x += p.vx; p.y += p.vy; p.vy += .12; p.rot += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.cor; ctx.globalAlpha = Math.max(0, 1 - quadros / max);
+      ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+      ctx.restore();
+    }
+    if (++quadros < max) requestAnimationFrame(passo);
+    else ctx.clearRect(0, 0, innerWidth, innerHeight);
+  })();
+}
+
+/* ============ PDF ============ */
+document.getElementById('botaoPdf').addEventListener('click', () => {
+  const g = statusGeral();
+  const investido = somaValores(FOTOS);
+  const data = new Date().toLocaleDateString('pt-BR');
+  let html = `<h1>Enxoval da Alice</h1>
+    <div class="imp-sub">${Math.round(g.pct * 100)}% completo · ${g.tem} de ${g.alvo} itens${investido > 0 ? ' · ' + dinheiro(investido) + ' investidos' : ''} · lista gerada em ${data}</div>`;
+  for (const col of COLECOES) {
+    const s = statusCol(col);
+    const gasto = valorCol(col);
+    html += `<h2>${col.nome}${col.letra ? ' (tamanho ' + col.letra + ' / EUA ' + col.us + ')' : ''} — ${s.tem} de ${s.alvo}${gasto > 0 ? ' · ' + dinheiro(gasto) : ''}</h2><table>`;
+    for (const item of col.itens) {
+      const t = tenho(col, item);
+      const falta = item.alvo - t;
+      const vitem = somaValores(fotosDe(chaveItem(col, item)));
+      html += `<tr>
+        <td>${falta > 0 ? '☐' : '☑'} ${item.nome}</td>
+        <td class="q">${t} de ${item.alvo}</td>
+        <td class="q">${vitem > 0 ? dinheiro(vitem) : ''}</td>
+        <td class="q">${falta > 0 ? `<span class="falta-marca">faltam ${falta}</span>` : '<span class="ok-marca">completo ✓</span>'}</td>
+      </tr>`;
+    }
+    html += `</table>`;
+  }
+  html += `<div class="imp-rodape">Feito com amor para a chegada da Alice. 🎀</div>`;
+  document.getElementById('areaImpressao').innerHTML = html;
+  window.print();
+});
+
+/* ============ INÍCIO ============ */
+renderHome();
+iniciarDB().then(() => {
+  renderHome();
+  if (colAberta) renderCol(colAberta, false);
+});
+
+/* PWA: funcionar offline e proteger os dados guardados no aparelho */
+if (typeof navigator !== 'undefined') {
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+}
+</script>
+</body>
+</html>
