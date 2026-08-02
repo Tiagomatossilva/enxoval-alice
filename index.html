@@ -105,6 +105,8 @@
   .fase-info { flex: 1; min-width: 0; }
   .fase-info .nome { font-size: 16px; font-weight: 650; }
   .fase-info .idade { font-size: 12.5px; color: var(--suave); margin-top: 1px; }
+  .fase-info .quando { font-size: 11.5px; color: var(--amora-forte); font-weight: 600; margin-top: 2px; }
+  .link-ajuste { color: var(--amora-forte); text-decoration: underline; font-size: inherit; padding: 0; }
   .fase-status { font-size: 12px; color: var(--suave); text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
   .fase-status .falta { color: var(--amora-forte); font-weight: 600; }
   .fase-cartao.completa { background: linear-gradient(135deg, var(--veu), var(--cartao)); border-color: var(--amora); }
@@ -392,6 +394,12 @@
       <div class="titulo"><h3 class="display">Moeda e IA</h3><div class="sub">Ajustes do enxoval</div></div>
       <button class="sheet-fechar" data-fechar-ajustes aria-label="Fechar">✕</button>
     </div>
+    <div class="grupo-titulo">A chegada da Alice</div>
+    <div class="linha-2" style="margin-top:10px">
+      <div class="campo"><label for="cNasc">Nascimento previsto</label><input id="cNasc" type="date"></div>
+      <div class="campo"><label for="cPeso">Peso estimado (kg)</label><input id="cPeso" type="text" inputmode="decimal" placeholder="3,2"></div>
+    </div>
+    <p class="sem-fotos">Com a data, eu mostro em que meses e estação ela usará cada tamanho; com o peso, quanto tempo o RN deve durar. Dá para ajustar quando quiser — inclusive depois que ela nascer.</p>
     <div class="grupo-titulo">Moeda dos valores</div>
     <div class="chips">
       <button class="chip" data-moeda="USD">US$ · dólar</button>
@@ -426,22 +434,22 @@ const ROUPAS = (q) => ([
 ]);
 
 const COLECOES = [
-  { id:'rn', tipo:'fase', letra:'RN', us:'NB', nome:'Recém-nascida', idade:'0 a 1 mês · até 4 kg',
+  { id:'rn', tipo:'fase', letra:'RN', us:'NB', faixa:[0,1], nome:'Recém-nascida', idade:'0 a 1 mês · até 4 kg',
     itens:[ ...ROUPAS([4,4,4,3,4,2]),
       { id:'tou', emoji:'🎀', nome:'Touca', alvo:1 },
       { id:'luv', emoji:'🧤', nome:'Luvinhas (pares)', alvo:2 },
       { id:'sai', emoji:'🌸', nome:'Saída de maternidade', alvo:1 } ] },
-  { id:'p', tipo:'fase', letra:'P', us:'3M', nome:'1 a 3 meses', idade:'4 a 6 kg',
+  { id:'p', tipo:'fase', letra:'P', us:'3M', faixa:[1,3], nome:'1 a 3 meses', idade:'4 a 6 kg',
     itens:[ ...ROUPAS([6,6,6,6,6,2]),
       { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:2 },
       { id:'tou', emoji:'🎀', nome:'Touca', alvo:1 } ] },
-  { id:'m', tipo:'fase', letra:'M', us:'6M', nome:'3 a 6 meses', idade:'6 a 8 kg',
+  { id:'m', tipo:'fase', letra:'M', us:'6M', faixa:[3,6], nome:'3 a 6 meses', idade:'6 a 8 kg',
     itens:[ ...ROUPAS([6,6,6,6,6,2]),
       { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:3 } ] },
-  { id:'g', tipo:'fase', letra:'G', us:'9M', nome:'6 a 9 meses', idade:'8 a 9 kg',
+  { id:'g', tipo:'fase', letra:'G', us:'9M', faixa:[6,9], nome:'6 a 9 meses', idade:'8 a 9 kg',
     itens:[ ...ROUPAS([5,5,5,5,4,2]),
       { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:3 } ] },
-  { id:'gg', tipo:'fase', letra:'GG', us:'12M', nome:'9 a 12 meses', idade:'9 a 10 kg',
+  { id:'gg', tipo:'fase', letra:'GG', us:'12M', faixa:[9,12], nome:'9 a 12 meses', idade:'9 a 10 kg',
     itens:[ ...ROUPAS([4,4,4,4,4,2]),
       { id:'ves', emoji:'👗', nome:'Vestido / conjunto', alvo:3 } ] },
 
@@ -594,6 +602,52 @@ function dinheiro(v) {
   const [int, dec] = s.split('.');
   return 'US$ ' + int.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + dec;
 }
+/* ---- chegada da Alice: data prevista, períodos e estações ---- */
+const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+function dataNasc() {
+  if (!CONFIG.nascimento) return null;
+  const d = new Date(CONFIG.nascimento + 'T12:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+function mesesDepois(base, m) { const d = new Date(base.getTime()); d.setMonth(d.getMonth() + m); return d; }
+function fmtMes(d) { return MESES_ABREV[d.getMonth()] + '/' + String(d.getFullYear()).slice(2); }
+function estacaoDe(d) {
+  const m = d.getMonth();
+  const idx = (m === 11 || m <= 1) ? 0 : m <= 4 ? 1 : m <= 7 ? 2 : 3;
+  const norte = CONFIG.moeda !== 'BRL'; /* comprando em US$ → hemisfério norte; em R$ → sul */
+  const nomes = norte
+    ? ['inverno ❄️', 'primavera 🌸', 'verão ☀️', 'outono 🍂']
+    : ['verão ☀️', 'outono 🍂', 'inverno ❄️', 'primavera 🌸'];
+  return nomes[idx];
+}
+function periodoFase(col) {
+  const n = dataNasc();
+  if (!n || !col.faixa) return null;
+  const ini = mesesDepois(n, col.faixa[0]);
+  const fim = mesesDepois(n, col.faixa[1]);
+  const e1 = estacaoDe(ini), e2 = estacaoDe(fim);
+  return { ini, fim, estacao: e1 === e2 ? e1 : e1 + ' → ' + e2 };
+}
+function dicaPesoRN() {
+  const p = CONFIG.peso;
+  if (!p) return '';
+  const kg = p.toFixed(1).replace('.', ',');
+  if (p >= 3.8) return ` Com previsão de ${kg} kg, ela pode até já nascer vestindo P — compre pouquíssimo RN.`;
+  if (p >= 3.4) return ` Com previsão de ${kg} kg, o tamanho RN deve servir por só ~2 semanas — compre o mínimo.`;
+  if (p >= 3.0) return ` Com previsão de ${kg} kg, o tamanho RN deve servir por ~3 a 4 semanas.`;
+  return ` Com previsão de ${kg} kg, o tamanho RN deve servir por ~1 mês ou mais.`;
+}
+function linhaChegada() {
+  const n = dataNasc();
+  if (!n) return `<br><button class="link-ajuste" data-abre-ajustes>🗓️ Informe a data prevista do nascimento</button> e eu calculo quando cada tamanho será usado`;
+  const diff = Math.round((n.getTime() - Date.now()) / 86400000);
+  if (diff > 13) return `<br>🗓️ Faltam ~${Math.round(diff / 7)} semanas para ela chegar 💛`;
+  if (diff > 1) return `<br>🗓️ Faltam ${diff} dias para ela chegar 💛`;
+  if (diff >= -1) return '<br>💛 A Alice está chegando!';
+  const dias = -diff;
+  return `<br>👶 A Alice tem ${dias < 63 ? Math.floor(dias / 7) + ' semanas' : Math.floor(dias / 30.44) + ' meses'}`;
+}
+
 function parseValor(txt) {
   txt = (txt || '').trim();
   if (!txt) return null;
@@ -638,7 +692,8 @@ function renderHome() {
     (g.tem >= g.alvo
       ? `Tudo pronto para a chegada dela! 💛`
       : `<strong>${g.alvo - g.tem}</strong> itens faltam para completar o enxoval`) +
-    (investido > 0 ? `<br><strong>${dinheiro(investido)}</strong> investidos até agora` : '');
+    (investido > 0 ? `<br><strong>${dinheiro(investido)}</strong> investidos até agora` : '') +
+    linhaChegada();
 
   const fases = COLECOES.filter(c => c.tipo === 'fase');
   document.getElementById('contaFases').textContent =
@@ -646,9 +701,10 @@ function renderHome() {
   document.getElementById('trilhaFases').innerHTML = fases.map(col => {
     const s = statusCol(col);
     const completa = s.tem >= s.alvo;
+    const per = periodoFase(col);
     return `<button class="fase-cartao ${completa ? 'completa' : ''}" data-col="${col.id}">
       <div class="fase-anel">${anel(s.pct, 52, 5)}<div class="letra">${col.letra}</div></div>
-      <div class="fase-info"><div class="nome">${col.nome}</div><div class="idade">${col.idade}${col.us ? ' · EUA ' + col.us : ''}</div></div>
+      <div class="fase-info"><div class="nome">${col.nome}</div><div class="idade">${col.idade}${col.us ? ' · EUA ' + col.us : ''}</div>${per ? `<div class="quando">👗 ${fmtMes(per.ini)}–${fmtMes(per.fim)} · ${per.estacao}</div>` : ''}</div>
       <div class="fase-status">${completa ? 'Fase completa ✨' : `<span class="falta">faltam ${s.alvo - s.tem}</span><br>${s.tem} de ${s.alvo} itens`}</div>
       <span class="seta">›</span>
     </button>`;
@@ -686,7 +742,13 @@ function renderCol(id, anim) {
     (s.tem >= s.alvo
       ? `<strong>Página completa!</strong> Todos os ${s.alvo} itens desta ${col.tipo === 'fase' ? 'fase' : 'categoria'} já estão garantidos. ✨`
       : `<strong>${s.itensCompletos} de ${s.totalItens} itens completos.</strong> Faltam ${s.alvo - s.tem} pecinhas para fechar esta ${col.tipo === 'fase' ? 'fase' : 'categoria'}.`) +
-    (gasto > 0 ? ` <strong>${dinheiro(gasto)}</strong> investidos aqui.` : '');
+    (gasto > 0 ? ` <strong>${dinheiro(gasto)}</strong> investidos aqui.` : '') +
+    (function () {
+      const per = periodoFase(col);
+      let extra = per ? `<br>👗 Ela usa esta fase de <strong>${fmtMes(per.ini)}</strong> a <strong>${fmtMes(per.fim)}</strong> — em plena ${per.estacao}: pense em peças para essa estação.` : '';
+      if (col.id === 'rn') extra += dicaPesoRN();
+      return extra;
+    })();
 
   const grupos = [];
   for (const item of col.itens) {
@@ -877,9 +939,15 @@ document.addEventListener('click', (ev) => {
   }
   if (alvo.closest('[data-salvar-ajustes]')) {
     CONFIG.chave = (document.getElementById('cChave').value || '').trim();
+    CONFIG.nascimento = document.getElementById('cNasc').value || '';
+    const pesoTxt = (document.getElementById('cPeso').value || '').trim().replace(',', '.');
+    const peso = Number(pesoTxt);
+    CONFIG.peso = pesoTxt && !isNaN(peso) && peso >= 0.5 && peso <= 7 ? peso : null;
     salvarCfg();
+    renderHome();
+    if (colAberta) renderCol(colAberta, false);
     document.getElementById('ajustesFundo').classList.remove('aberta');
-    toast(CONFIG.chave ? '✨ Chave guardada — a leitura de etiqueta está ativa!' : 'Ajustes salvos.');
+    toast(dataNasc() ? '🗓️ Anotado! Agora cada fase mostra quando ela será usada.' : (CONFIG.chave ? '✨ Chave guardada — a leitura de etiqueta está ativa!' : 'Ajustes salvos.'));
     return;
   }
   if (alvo.closest('[data-salvar-foto]')) { salvarFotoPendente(); return; }
@@ -963,6 +1031,8 @@ function salvarFotoPendente() {
 /* ============ AJUSTES ============ */
 function abrirAjustes() {
   document.getElementById('cChave').value = CONFIG.chave || '';
+  document.getElementById('cNasc').value = CONFIG.nascimento || '';
+  document.getElementById('cPeso').value = CONFIG.peso ? String(CONFIG.peso).replace('.', ',') : '';
   atualizarChips();
   document.getElementById('ajustesFundo').classList.add('aberta');
 }
