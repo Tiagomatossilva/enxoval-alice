@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <linearGradient id="fundo" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#F6D3DF"/>
+      <stop offset="1" stop-color="#E8A9BF"/>
+    </linearGradient>
+    <linearGradient id="laco" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D07590"/>
+      <stop offset="1" stop-color="#B85C7A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#fundo)"/>
+
+  <path d="M160 860 c-12-18-38-19-38-1 c0 12 22 25 38 33 c16-8 38-21 38-33 c0-18-26-17-38 1z" fill="#FFFFFF" opacity="0.4"/>
+  <path d="M930 830 c-10-15-32-16-32-1 c0 10 19 21 32 28 c13-7 32-18 32-28 c0-15-22-14-32 1z" fill="#FFFFFF" opacity="0.4"/>
+  <path d="M900 180 c-10-15-32-16-32-1 c0 10 19 21 32 28 c13-7 32-18 32-28 c0-15-22-14-32 1z" fill="#FFFFFF" opacity="0.35"/>
+  <path d="M180 220 c-8-12-26-13-26-1 c0 8 15 17 26 23 c11-6 26-15 26-23 c0-12-18-11-26 1z" fill="#FFFFFF" opacity="0.35"/>
+
+  <circle cx="540" cy="430" r="248" fill="#FFF9F5" opacity="0.55"/>
+  <circle cx="540" cy="430" r="226" fill="#FFF9F5"/>
+  <text x="540" y="548" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="bold" font-size="330" fill="#BE5F7D">A</text>
+  <g>
+    <path d="M540 194 C 478 144, 394 152, 400 206 C 404 250, 487 242, 540 194 Z" fill="url(#laco)"/>
+    <path d="M540 194 C 602 144, 686 152, 680 206 C 676 250, 593 242, 540 194 Z" fill="url(#laco)"/>
+    <path d="M520 210 L 495 278 L 526 264 Z" fill="url(#laco)"/>
+    <path d="M560 210 L 585 278 L 554 264 Z" fill="url(#laco)"/>
+    <circle cx="540" cy="198" r="27" fill="#A94E6B"/>
+  </g>
+
+  <text x="540" y="810" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="bold" font-size="100" fill="#8E4560">Enxoval da Alice</text>
+  <text x="540" y="880" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="44" fill="#A05F79">o álbum do enxoval, na palma da mão</text>
+  <text x="540" y="950" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="33" fill="#B0728A">fases · fotos · etiquetas · progresso</text>
+</svg>

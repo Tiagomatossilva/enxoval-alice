@@ -1,12 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="fundo" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#D98BA1"/>
-      <stop offset="1" stop-color="#B05570"/>
+    <linearGradient id="fundo" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#F6D3DF"/>
+      <stop offset="1" stop-color="#E8A9BF"/>
+    </linearGradient>
+    <linearGradient id="laco" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D07590"/>
+      <stop offset="1" stop-color="#B85C7A"/>
     </linearGradient>
   </defs>
+
   <rect width="512" height="512" fill="url(#fundo)"/>
-  <circle cx="256" cy="248" r="170" fill="#FAF5F0" opacity="0.14"/>
-  <text x="256" y="330" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="bold" font-size="300" fill="#FAF5F0">A</text>
-  <path d="M256 424 c-10-16-34-18-34-2 c0 10 20 22 34 30 c14-8 34-20 34-30 c0-16-24-14-34 2z" fill="#FAF5F0"/>
+
+  <!-- corações discretos ao fundo -->
+  <path d="M84 404 c-8-12-26-13-26-1 c0 8 15 17 26 23 c11-6 26-15 26-23 c0-12-18-11-26 1z" fill="#FFFFFF" opacity="0.45"/>
+  <path d="M428 396 c-6-10-21-11-21-1 c0 7 12 14 21 19 c9-5 21-12 21-19 c0-10-15-9-21 1z" fill="#FFFFFF" opacity="0.45"/>
+  <path d="M96 120 c-6-10-21-11-21-1 c0 7 12 14 21 19 c9-5 21-12 21-19 c0-10-15-9-21 1z" fill="#FFFFFF" opacity="0.35"/>
+  <path d="M424 132 c-8-12-26-13-26-1 c0 8 15 17 26 23 c11-6 26-15 26-23 c0-12-18-11-26 1z" fill="#FFFFFF" opacity="0.35"/>
+
+  <!-- medalhão branco -->
+  <circle cx="256" cy="288" r="176" fill="#FFF9F5" opacity="0.55"/>
+  <circle cx="256" cy="288" r="160" fill="#FFF9F5"/>
+
+  <!-- letra A -->
+  <text x="256" y="372" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="bold" font-size="230" fill="#BE5F7D">A</text>
+
+  <!-- lacinho no topo do medalhão -->
+  <g>
+    <path d="M256 118 C 212 82, 152 88, 156 126 C 159 158, 218 152, 256 118 Z" fill="url(#laco)"/>
+    <path d="M256 118 C 300 82, 360 88, 356 126 C 353 158, 294 152, 256 118 Z" fill="url(#laco)"/>
+    <path d="M256 118 C 224 92, 180 96, 183 124 C 185 146, 227 143, 256 118 Z" fill="#E19AB2" opacity="0.55"/>
+    <path d="M256 118 C 288 92, 332 96, 329 124 C 327 146, 285 143, 256 118 Z" fill="#E19AB2" opacity="0.55"/>
+    <path d="M242 130 L 224 178 L 246 168 Z" fill="url(#laco)"/>
+    <path d="M270 130 L 288 178 L 266 168 Z" fill="url(#laco)"/>
+    <circle cx="256" cy="121" r="19" fill="#A94E6B"/>
+  </g>
 </svg>

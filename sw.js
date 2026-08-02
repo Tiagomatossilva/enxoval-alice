@@ -1,5 +1,5 @@
 /* Service worker do Enxoval da Alice — deixa o app abrir sem internet. */
-const CACHE = 'enxoval-alice-v1';
+const CACHE = 'enxoval-alice-v2';
 const ARQUIVOS = ['.', 'index.html', 'manifest.webmanifest', 'icone-192.png', 'icone-512.png', 'icone-180.png'];
 
 self.addEventListener('install', (e) => {
