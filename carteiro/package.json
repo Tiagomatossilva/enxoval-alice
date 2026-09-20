@@ -1,0 +1,9 @@
+{
+  "name": "alice-carteiro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Carteiro do Enxoval da Alice: alarmes por notificação e sincronização entre celulares.",
+  "main": "servidor.js",
+  "scripts": { "start": "node servidor.js" },
+  "dependencies": { "web-push": "^3.6.7" }
+}

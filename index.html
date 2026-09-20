@@ -718,6 +718,10 @@
       <button class="chip" data-voz="off">🔇 Só texto</button>
     </div>
     <p class="sem-fotos">Tudo isso também muda por conversa na aba Alice ("deixa o alarme para as 2 e meia").</p>
+    <div class="grupo-titulo">Carteiro (avisos com o app fechado + dois celulares)</div>
+    <div class="campo" style="margin-top:10px"><label for="aCartUrl">Endereço do carteiro</label><input id="aCartUrl" type="url" placeholder="https://…" autocomplete="off"></div>
+    <div class="campo" style="margin-top:8px"><label for="aCartSegredo">Senha do carteiro</label><input id="aCartSegredo" type="password" autocomplete="off"></div>
+    <p class="sem-fotos">Com o carteiro ligado, os alarmes chegam como notificação mesmo com o app fechado, e os registros ficam iguais no seu celular e no da Gabriela. Depois de preencher, toque em "🔔 Ativar avisos" na aba Alice em cada aparelho.</p>
     <div class="grupo-titulo">Recorte automático das fotos</div>
     <div class="chips">
       <button class="chip" data-recorte="on">✂️ Ligado</button>
@@ -974,7 +978,7 @@ function valorCol(col) {
 }
 /* ============ CONFIGURAÇÃO (moeda + chave da IA) ============ */
 const CFG_CHAVE = 'enxoval-alice-cfg';
-const VERSAO = 9;
+const VERSAO = 10;
 let CONFIG = { moeda: 'USD', chave: '', lugar: 'BR' };
 try { CONFIG = Object.assign(CONFIG, JSON.parse(localStorage.getItem(CFG_CHAVE) || '{}')); } catch (e) {}
 function salvarCfg() { try { localStorage.setItem(CFG_CHAVE, JSON.stringify(CONFIG)); } catch (e) {} }
@@ -1524,7 +1528,10 @@ document.addEventListener('click', (ev) => {
     CFA.pesoNasc = num('aPesoNasc', CFA.pesoNasc);
     CFA.nascimento = document.getElementById('aNasc').value || CFA.nascimento;
     CFA.retorno = document.getElementById('aRetorno').value || '';
+    CFA.carteiroUrl = (document.getElementById('aCartUrl').value || '').trim();
+    CFA.carteiroSegredo = (document.getElementById('aCartSegredo').value || '').trim();
     salvarCfa();
+    carteiroAposMudanca();
     renderHome();
     renderTudoAlice();
     if (colAberta) renderCol(colAberta, false);
@@ -1654,6 +1661,8 @@ function abrirAjustes() {
   document.getElementById('aPesoNasc').value = String(CFA.pesoNasc || '');
   document.getElementById('aNasc').value = CFA.nascimento || '';
   document.getElementById('aRetorno').value = CFA.retorno || '';
+  document.getElementById('aCartUrl').value = CFA.carteiroUrl || '';
+  document.getElementById('aCartSegredo').value = CFA.carteiroSegredo || '';
   atualizarChips();
   document.getElementById('ajustesFundo').classList.add('aberta');
 }
@@ -1869,7 +1878,7 @@ let CFA = {
   alarmeHoraUnica: null,
 };
 try { CFA = Object.assign(CFA, JSON.parse(localStorage.getItem(CFA_CHAVE) || '{}')); } catch (e) {}
-function salvarCfa() { try { localStorage.setItem(CFA_CHAVE, JSON.stringify(CFA)); } catch (e) {} }
+function salvarCfa() { CFA.rev = Date.now(); try { localStorage.setItem(CFA_CHAVE, JSON.stringify(CFA)); } catch (e) {} }
 
 /* ---- básicos ---- */
 function novoIdEv() { return 'ev' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
@@ -1986,6 +1995,7 @@ function aplicarOperacoes(ops) {
     if (op.op === 'criar' && op.evento) {
       const ev = Object.assign({ id: novoIdEv(), data: diaStr(), inicio: agoraHM(), pendencias: [] }, limparNulos(op.evento));
       if (!ev.pendencias) ev.pendencias = [];
+      ev.rev = Date.now();
       EVA.push(ev);
       if (ev.tipo === 'mamada' || ev.tipo === 'mamadeira') CFA.alarmeHoraUnica = null;
       feitos.push('criou ' + ev.tipo + ' ' + (ev.inicio || ''));
@@ -1994,10 +2004,13 @@ function aplicarOperacoes(ops) {
       if (ev && op.evento) {
         Object.assign(ev, limparNulos(op.evento));
         if (op.evento.pendencias !== null && op.evento.pendencias !== undefined) ev.pendencias = op.evento.pendencias;
+        ev.rev = Date.now();
         feitos.push('editou ' + ev.tipo + ' ' + (ev.inicio || ''));
       }
     } else if (op.op === 'excluir' && op.id) {
       EVA = EVA.filter(e => e.id !== op.id);
+      if (!EXCLUIDOS.includes(op.id)) EXCLUIDOS.push(op.id);
+      salvarExcluidos();
       feitos.push('excluiu registro');
     } else if (op.op === 'alarme') {
       if (op.hora) { CFA.alarmeHoraUnica = op.hora; feitos.push('alarme para ' + op.hora); }
@@ -2014,7 +2027,123 @@ function aplicarOperacoes(ops) {
   }
   salvarEva(); salvarCfa();
   renderTudoAlice();
+  carteiroAposMudanca();
   return feitos;
+}
+
+/* ---- carteiro (avisos com o app fechado) + sincronização entre celulares ---- */
+const EXC_CHAVE = 'alice-cuidados-excluidos';
+let EXCLUIDOS = [];
+try { EXCLUIDOS = JSON.parse(localStorage.getItem(EXC_CHAVE) || '[]'); } catch (e) { EXCLUIDOS = []; }
+function salvarExcluidos() { try { localStorage.setItem(EXC_CHAVE, JSON.stringify(EXCLUIDOS)); } catch (e) {} }
+function carteiroAtivo() { return !!(CFA.carteiroUrl && CFA.carteiroSegredo); }
+function carteiroFetch(caminho, metodo, corpo) {
+  return fetch(String(CFA.carteiroUrl).replace(/\/+$/, '') + caminho, {
+    method: metodo || 'GET',
+    headers: { 'content-type': 'application/json', 'x-segredo': CFA.carteiroSegredo },
+    body: corpo ? JSON.stringify(corpo) : undefined,
+  }).then(r => { if (!r.ok) throw new Error('carteiro respondeu ' + r.status); return r.json().catch(() => ({})); });
+}
+function montarAlarmesCarteiro() {
+  const lista = [];
+  const est = estadoMamada();
+  if (est.p) {
+    const t = est.p.hora.getTime();
+    lista.push({ id: 'mam-aviso', quando: t - 10 * 60e3, titulo: '🤱 Mamada em 10 minutos', corpo: 'às ' + hm(est.p.hora) });
+    lista.push({ id: 'mam-hora', quando: t, titulo: '🤱 Hora da mamada', corpo: 'prevista para ' + hm(est.p.hora) });
+    lista.push({ id: 'mam-30', quando: t + 30 * 60e3, titulo: '🤱 Mamada ainda não registrada', corpo: 'prevista para ' + hm(est.p.hora) });
+  }
+  if (est.u) {
+    const u = dtDe(est.u).getTime();
+    lista.push({ id: 'mam-quaselimite', quando: u + ((CFA.limite_h || 6) - 0.5) * 3600e3, titulo: '⚠️ Quase no limite sem mamar', corpo: 'O limite é ' + (CFA.limite_h || 6) + ' horas.' });
+    lista.push({ id: 'mam-limite', quando: u + (CFA.limite_h || 6) * 3600e3, titulo: '🔴 Limite de ' + (CFA.limite_h || 6) + 'h sem mamar', corpo: 'Vale falar com a pediatra.' });
+  }
+  for (const dias of [0, 1]) {
+    const d = new Date(Date.now() + dias * 86400000);
+    const quando = new Date(diaStr(d) + 'T' + (CFA.solIni || '08:30') + ':00').getTime() - 10 * 60e3;
+    if (quando > Date.now() && !(dias === 0 && placarDia().sol > 0)) {
+      lista.push({ id: 'sol-' + dias, quando, titulo: '☀️ Banho de sol chegando', corpo: (CFA.solIni || '08:30') + ' às ' + (CFA.solFim || '09:00') });
+    }
+  }
+  const pl = placarDia();
+  const t16 = new Date(diaStr() + 'T16:00:00').getTime();
+  const t20 = new Date(diaStr() + 'T20:00:00').getTime();
+  if (t16 > Date.now()) lista.push({ id: 'fraldas-16', quando: t16, titulo: '🧷 Como estão as fraldas?', corpo: 'Placar até agora: xixi ' + pl.xixi + ' de ' + (CFA.metaXixi || 6) + ', cocô ' + pl.coco + ' de ' + (CFA.metaCoco || 3) + '.' });
+  if (t20 > Date.now() && (pl.xixi === 0 || pl.coco === 0)) lista.push({ id: 'fraldas-20', quando: t20, titulo: '🧷 Fraldas do dia', corpo: 'Ainda falta registrar xixi ou cocô hoje.' });
+  if (CFA.retorno) {
+    const vesp = new Date(CFA.retorno + 'T09:00:00').getTime() - 86400000;
+    const dia = new Date(CFA.retorno + 'T08:00:00').getTime();
+    if (vesp > Date.now()) lista.push({ id: 'retorno-vespera', quando: vesp, titulo: '🩺 Amanhã: retorno pediátrico', corpo: CFA.retorno });
+    if (dia > Date.now()) lista.push({ id: 'retorno-dia', quando: dia, titulo: '🩺 Hoje: retorno pediátrico', corpo: '' });
+  }
+  return lista;
+}
+function mesclarEventos(locais, remotos, excluidos) {
+  const porId = {};
+  for (const e of remotos || []) if (e && e.id) porId[e.id] = e;
+  for (const e of locais || []) {
+    if (!e || !e.id) continue;
+    const r = porId[e.id];
+    if (!r || (e.rev || 0) >= (r.rev || 0)) porId[e.id] = e;
+  }
+  const exc = new Set(excluidos || []);
+  return Object.values(porId).filter(e => !exc.has(e.id));
+}
+let sincTimer = null, sincRodando = false;
+function carteiroAposMudanca() {
+  if (!carteiroAtivo()) return;
+  clearTimeout(sincTimer);
+  sincTimer = setTimeout(() => { sincronizar(); enviarAlarmes(); }, 2500);
+}
+async function enviarAlarmes() {
+  if (!carteiroAtivo()) return;
+  try { await carteiroFetch('/alarmes', 'PUT', { lista: montarAlarmesCarteiro() }); } catch (e) {}
+}
+async function sincronizar() {
+  if (!carteiroAtivo() || sincRodando) return;
+  sincRodando = true;
+  try {
+    const remoto = await carteiroFetch('/dados').catch(() => null);
+    const excTudo = Array.from(new Set([].concat(EXCLUIDOS || [], (remoto && remoto.excluidos) || [])));
+    const eventos = mesclarEventos(EVA, remoto && remoto.eventos, excTudo);
+    const mudou = JSON.stringify(eventos) !== JSON.stringify(EVA);
+    let cfaMudou = false;
+    if (remoto && remoto.cfa && (remoto.cfa.rev || 0) > (CFA.rev || 0)) {
+      const guardar = { carteiroUrl: CFA.carteiroUrl, carteiroSegredo: CFA.carteiroSegredo };
+      CFA = Object.assign({}, CFA, remoto.cfa, guardar);
+      cfaMudou = true;
+    }
+    EVA = eventos; EXCLUIDOS = excTudo;
+    salvarEva(); salvarExcluidos();
+    try { localStorage.setItem(CFA_CHAVE, JSON.stringify(CFA)); } catch (e) {}
+    await carteiroFetch('/dados', 'PUT', { eventos: EVA, excluidos: EXCLUIDOS, cfa: CFA });
+    if (mudou || cfaMudou) renderTudoAlice();
+  } catch (e) {}
+  finally { sincRodando = false; }
+}
+function b64ParaU8(s) {
+  const pad = '='.repeat((4 - s.length % 4) % 4);
+  const b = (s + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const bruto = atob(b);
+  const u = new Uint8Array(bruto.length);
+  for (let i = 0; i < bruto.length; i++) u[i] = bruto.charCodeAt(i);
+  return u;
+}
+async function ligarAvisosCarteiro() {
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+      const p = await Notification.requestPermission();
+      if (p !== 'granted') { toast('Avisos não autorizados pelo aparelho.'); return; }
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const chave = await carteiroFetch('/chave-publica');
+    const ins = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ParaU8(chave.chave) });
+    await carteiroFetch('/inscrever', 'POST', { inscricao: ins.toJSON() });
+    await enviarAlarmes();
+    toast('🔔 Este aparelho vai receber os avisos mesmo com o app fechado!');
+  } catch (e) {
+    toast('Não consegui ligar os avisos: ' + e.message);
+  }
 }
 
 /* ---- cronômetro do banho de sol ---- */
@@ -2446,9 +2575,15 @@ document.getElementById('alBotResumo').addEventListener('click', () => {
   document.getElementById('alResumo').classList.toggle('aberto');
 });
 document.getElementById('alBotAvisos').addEventListener('click', () => {
+  if (carteiroAtivo()) { ligarAvisosCarteiro(); return; }
   if (typeof Notification === 'undefined') { toast('Este navegador não tem avisos de sistema; os alarmes tocam com o app aberto.'); return; }
-  Notification.requestPermission().then(p => toast(p === 'granted' ? '🔔 Avisos ativados neste aparelho!' : 'Avisos não autorizados; os alarmes seguem tocando com o app aberto.'));
+  Notification.requestPermission().then(p => toast(p === 'granted' ? '🔔 Avisos ativados com o app aberto! Para avisos com o app fechado, configure o carteiro nos ajustes.' : 'Avisos não autorizados; os alarmes seguem tocando com o app aberto.'));
 });
+if (carteiroAtivo()) {
+  sincronizar();
+  enviarAlarmes();
+  if (typeof setInterval !== 'undefined') setInterval(sincronizar, 60000);
+}
 if (typeof setInterval !== 'undefined') setInterval(tickAlice, 1000);
 try { if (localStorage.getItem('alice-aba') === 'alice') mostrarAba('alice'); } catch (e) {}
 renderHome();
@@ -2460,7 +2595,17 @@ iniciarDB().then(() => {
 /* PWA: funcionar offline e proteger os dados guardados no aparelho */
 if (typeof navigator !== 'undefined') {
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      reg.addEventListener('updatefound', () => {
+        const novo = reg.installing;
+        if (!novo) return;
+        novo.addEventListener('statechange', () => {
+          if (novo.state === 'installed' && navigator.serviceWorker.controller) {
+            toast('✨ Versão nova baixada! Feche o app e abra de novo para usar.');
+          }
+        });
+      });
+    }).catch(() => {});
   }
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 }

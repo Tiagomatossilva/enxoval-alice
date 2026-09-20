@@ -1,0 +1,16 @@
+services:
+  alice-carteiro:
+    build: .
+    container_name: alice-carteiro
+    restart: always
+    ports:
+      - "127.0.0.1:8090:8090"
+    environment:
+      SEGREDO: "TROQUE-POR-UMA-SENHA-FORTE"
+      CONTATO: "mailto:coloque-um-email-de-contato@aqui.com"
+      ORIGEM: "https://tiagomatossilva.github.io"
+    volumes:
+      - dados-carteiro:/dados
+
+volumes:
+  dados-carteiro:

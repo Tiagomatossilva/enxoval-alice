@@ -18,13 +18,33 @@
 
   <circle cx="540" cy="430" r="248" fill="#FFF9F5" opacity="0.55"/>
   <circle cx="540" cy="430" r="226" fill="#FFF9F5"/>
-  <text x="540" y="548" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="bold" font-size="330" fill="#BE5F7D">A</text>
-  <g>
-    <path d="M540 194 C 478 144, 394 152, 400 206 C 404 250, 487 242, 540 194 Z" fill="url(#laco)"/>
-    <path d="M540 194 C 602 144, 686 152, 680 206 C 676 250, 593 242, 540 194 Z" fill="url(#laco)"/>
-    <path d="M520 210 L 495 278 L 526 264 Z" fill="url(#laco)"/>
-    <path d="M560 210 L 585 278 L 554 264 Z" fill="url(#laco)"/>
-    <circle cx="540" cy="198" r="27" fill="#A94E6B"/>
+  
+  <g transform="translate(540,430) scale(1.38) translate(-256,-288)">
+    <!-- cabelinho escuro cheio -->
+    <circle cx="256" cy="292" r="120" fill="#4A3428"/>
+    <!-- mechinha em pé no topo -->
+    <path fill="#4A3428" d="M250 176 c-10-20 0-36 18-42 c-8 14 -2 26 8 32 c-10 4 -20 6 -26 10z"/>
+    <!-- rostinho -->
+    <circle cx="256" cy="318" r="104" fill="#F6D7C4"/>
+    <!-- franjinha sobre a testa -->
+    <ellipse cx="232" cy="228" rx="26" ry="14" fill="#4A3428"/>
+    <ellipse cx="272" cy="226" rx="24" ry="13" fill="#4A3428"/>
+    <!-- olhinhos fechados, serenos -->
+    <path d="M206 332 q14 14 28 0" fill="none" stroke="#4A3428" stroke-width="7" stroke-linecap="round"/>
+    <path d="M278 332 q14 14 28 0" fill="none" stroke="#4A3428" stroke-width="7" stroke-linecap="round"/>
+    <!-- bochechas -->
+    <ellipse cx="198" cy="362" rx="17" ry="11" fill="#F1A9B8" opacity="0.6"/>
+    <ellipse cx="314" cy="362" rx="17" ry="11" fill="#F1A9B8" opacity="0.6"/>
+    <!-- nariz e sorriso -->
+    <path d="M250 352 q6 7 12 0" fill="none" stroke="#D9A78E" stroke-width="6" stroke-linecap="round"/>
+    <path d="M238 380 q18 15 36 0" fill="none" stroke="#C97F92" stroke-width="7" stroke-linecap="round"/>
+    <!-- lacinho no cabelo, como na foto -->
+    <g transform="translate(330,204) scale(0.55)">
+      <path d="M0 0 C -46 -38, -108 -32, -104 8 C -101 42, -40 36, 0 0 Z" fill="url(#laco)"/>
+      <path d="M0 0 C 46 -38, 108 -32, 104 8 C 101 42, 40 36, 0 0 Z" fill="url(#laco)"/>
+      <circle cx="0" cy="2" r="16" fill="#A94E6B"/>
+    </g>
+  
   </g>
 
   <text x="540" y="810" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="bold" font-size="100" fill="#8E4560">Enxoval da Alice</text>

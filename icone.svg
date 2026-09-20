@@ -12,27 +12,40 @@
 
   <rect width="512" height="512" fill="url(#fundo)"/>
 
-  <!-- corações discretos ao fundo -->
+  <!-- corações discretos -->
   <path d="M84 404 c-8-12-26-13-26-1 c0 8 15 17 26 23 c11-6 26-15 26-23 c0-12-18-11-26 1z" fill="#FFFFFF" opacity="0.45"/>
   <path d="M428 396 c-6-10-21-11-21-1 c0 7 12 14 21 19 c9-5 21-12 21-19 c0-10-15-9-21 1z" fill="#FFFFFF" opacity="0.45"/>
   <path d="M96 120 c-6-10-21-11-21-1 c0 7 12 14 21 19 c9-5 21-12 21-19 c0-10-15-9-21 1z" fill="#FFFFFF" opacity="0.35"/>
-  <path d="M424 132 c-8-12-26-13-26-1 c0 8 15 17 26 23 c11-6 26-15 26-23 c0-12-18-11-26 1z" fill="#FFFFFF" opacity="0.35"/>
 
-  <!-- medalhão branco -->
+  <!-- medalhão -->
   <circle cx="256" cy="288" r="176" fill="#FFF9F5" opacity="0.55"/>
   <circle cx="256" cy="288" r="160" fill="#FFF9F5"/>
 
-  <!-- letra A -->
-  <text x="256" y="372" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="bold" font-size="230" fill="#BE5F7D">A</text>
-
-  <!-- lacinho no topo do medalhão -->
-  <g>
-    <path d="M256 118 C 212 82, 152 88, 156 126 C 159 158, 218 152, 256 118 Z" fill="url(#laco)"/>
-    <path d="M256 118 C 300 82, 360 88, 356 126 C 353 158, 294 152, 256 118 Z" fill="url(#laco)"/>
-    <path d="M256 118 C 224 92, 180 96, 183 124 C 185 146, 227 143, 256 118 Z" fill="#E19AB2" opacity="0.55"/>
-    <path d="M256 118 C 288 92, 332 96, 329 124 C 327 146, 285 143, 256 118 Z" fill="#E19AB2" opacity="0.55"/>
-    <path d="M242 130 L 224 178 L 246 168 Z" fill="url(#laco)"/>
-    <path d="M270 130 L 288 178 L 266 168 Z" fill="url(#laco)"/>
-    <circle cx="256" cy="121" r="19" fill="#A94E6B"/>
+  <!-- a Alice -->
+  <g id="alice">
+    <!-- cabelinho escuro cheio -->
+    <circle cx="256" cy="292" r="120" fill="#4A3428"/>
+    <!-- mechinha em pé no topo -->
+    <path fill="#4A3428" d="M250 176 c-10-20 0-36 18-42 c-8 14 -2 26 8 32 c-10 4 -20 6 -26 10z"/>
+    <!-- rostinho -->
+    <circle cx="256" cy="318" r="104" fill="#F6D7C4"/>
+    <!-- franjinha sobre a testa -->
+    <ellipse cx="232" cy="228" rx="26" ry="14" fill="#4A3428"/>
+    <ellipse cx="272" cy="226" rx="24" ry="13" fill="#4A3428"/>
+    <!-- olhinhos fechados, serenos -->
+    <path d="M206 332 q14 14 28 0" fill="none" stroke="#4A3428" stroke-width="7" stroke-linecap="round"/>
+    <path d="M278 332 q14 14 28 0" fill="none" stroke="#4A3428" stroke-width="7" stroke-linecap="round"/>
+    <!-- bochechas -->
+    <ellipse cx="198" cy="362" rx="17" ry="11" fill="#F1A9B8" opacity="0.6"/>
+    <ellipse cx="314" cy="362" rx="17" ry="11" fill="#F1A9B8" opacity="0.6"/>
+    <!-- nariz e sorriso -->
+    <path d="M250 352 q6 7 12 0" fill="none" stroke="#D9A78E" stroke-width="6" stroke-linecap="round"/>
+    <path d="M238 380 q18 15 36 0" fill="none" stroke="#C97F92" stroke-width="7" stroke-linecap="round"/>
+    <!-- lacinho no cabelo, como na foto -->
+    <g transform="translate(330,204) scale(0.55)">
+      <path d="M0 0 C -46 -38, -108 -32, -104 8 C -101 42, -40 36, 0 0 Z" fill="url(#laco)"/>
+      <path d="M0 0 C 46 -38, 108 -32, 104 8 C 101 42, 40 36, 0 0 Z" fill="url(#laco)"/>
+      <circle cx="0" cy="2" r="16" fill="#A94E6B"/>
+    </g>
   </g>
 </svg>
